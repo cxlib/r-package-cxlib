@@ -84,7 +84,7 @@ testthat::test_that( "batchjob.localProgramNotExist", {
   
   
   if ( file.exists( file.path( test_wd, test_program, fsep = "/" ) ) )
-    testthat::fail( "Unexpected test progrom exists" )
+    testthat::fail( "Unexpected test program exists" )
 
 
   # -- test
@@ -171,7 +171,7 @@ testthat::test_that( "batchjob.localJobDefProgramNotExist", {
   
   
   if ( file.exists( file.path( test_wd, test_program, fsep = "/" ) ) )
-    testthat::fail( "Unexpected test progrom exists" )
+    testthat::fail( "Unexpected test program exists" )
   
   
   # -- test
@@ -269,7 +269,7 @@ testthat::test_that( "batchjob.localOneOfProgramsNotExist", {
   
   
   if ( file.exists( file.path( test_wd, utils::tail( test_programs, n = 1 ), fsep = "/" ) ) )
-    testthat::fail( "Unexpected test progrom exists" )
+    testthat::fail( "Unexpected test program exists" )
   
   
   # -- test
@@ -367,7 +367,7 @@ testthat::test_that( "batchjob.localJobDefOneOfProgramsNotExist", {
   
   
   if ( file.exists( file.path( test_wd, utils::tail( test_programs, n = 1 ), fsep = "/" ) ) )
-    testthat::fail( "Unexpected test progrom exists" )
+    testthat::fail( "Unexpected test program exists" )
   
   
   # -- test
@@ -466,7 +466,7 @@ testthat::test_that( "batchjob.localPrograms", {
   
   
   if ( ! all(file.exists( file.path( test_wd, test_programs, fsep = "/" ) )) )
-    testthat::fail( "Unexpected test progrom exists" )
+    testthat::fail( "Unexpected test program exists" )
   
 
   
@@ -611,7 +611,7 @@ testthat::test_that( "batchjob.localJobDefPrograms", {
   
   
   if ( ! all(file.exists( file.path( test_wd, test_programs, fsep = "/" ) )) )
-    testthat::fail( "Unexpected test progrom exists" )
+    testthat::fail( "Unexpected test program exists" )
   
   
   
@@ -756,7 +756,7 @@ testthat::test_that( "batchjob.localJobDefProgramsOptionAltLogPath", {
   
   
   if ( ! all(file.exists( file.path( test_wd, test_programs, fsep = "/" ) )) )
-    testthat::fail( "Unexpected test progrom exists" )
+    testthat::fail( "Unexpected test program exists" )
   
   
   # - test log
@@ -910,7 +910,7 @@ testthat::test_that( "batchjob.localJobDefProgramsOptionAltLogExt", {
   
   
   if ( ! all(file.exists( file.path( test_wd, test_programs, fsep = "/" ) )) )
-    testthat::fail( "Unexpected test progrom exists" )
+    testthat::fail( "Unexpected test program exists" )
   
   
   
@@ -1055,7 +1055,7 @@ testthat::test_that( "batchjob.localJobDefProgramsOptionAltLogPathExt", {
   
   
   if ( ! all(file.exists( file.path( test_wd, test_programs, fsep = "/" ) )) )
-    testthat::fail( "Unexpected test progrom exists" )
+    testthat::fail( "Unexpected test program exists" )
   
   
   # - test log
@@ -1222,7 +1222,7 @@ testthat::test_that( "batchjob.localJobDefProgramsPropAltLogPathExt", {
   
   
   if ( ! all(file.exists( file.path( test_wd, test_programs, fsep = "/" ) )) )
-    testthat::fail( "Unexpected test progrom exists" )
+    testthat::fail( "Unexpected test program exists" )
   
   
 
@@ -1387,7 +1387,7 @@ testthat::test_that( "batchjob.localJobDefProgramsPropAltLogPathExtOptionPrecede
   
   
   if ( ! all(file.exists( file.path( test_wd, test_programs, fsep = "/" ) )) )
-    testthat::fail( "Unexpected test progrom exists" )
+    testthat::fail( "Unexpected test program exists" )
   
   
   

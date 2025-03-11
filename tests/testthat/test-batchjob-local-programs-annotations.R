@@ -127,7 +127,7 @@ testthat::test_that( "batchjob.localProgramAnnoInputFiles", {
   
   
   if ( ! all(file.exists( file.path( test_wd, test_programs, fsep = "/" ) )) )
-    testthat::fail( "Unexpected test progrom exists" )
+    testthat::fail( "Unexpected test program exists" )
   
 
 
@@ -316,7 +316,7 @@ testthat::test_that( "batchjob.localProgramAnnoInputDir", {
   
   
   if ( ! all(file.exists( file.path( test_wd, test_programs, fsep = "/" ) )) )
-    testthat::fail( "Unexpected test progrom exists" )
+    testthat::fail( "Unexpected test program exists" )
   
   
   
@@ -502,7 +502,7 @@ testthat::test_that( "batchjob.localProgramAnnoOutputDir", {
   
   
   if ( ! all(file.exists( file.path( test_wd, test_programs, fsep = "/" ) )) )
-    testthat::fail( "Unexpected test progrom exists" )
+    testthat::fail( "Unexpected test program exists" )
   
   
   
