@@ -49,12 +49,21 @@ testthat::test_that( "batchjob.execdProgramActionNotList", {
 })
 
 
+testthat::test_that( "batchjob.execdProgramActionEmptyList", {
+  
+  # -- test
+  
+  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list() ), 
+                          regexp = "^Action missing or invalid$" )
+  
+})
+
 
 testthat::test_that( "batchjob.execdProgramActionEmptyListMissingOption", {
 
   # -- test
   
-  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list() ), 
+  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list( "not empty" ) ), 
                           regexp = "^Expected options missing$" )
   
 })
@@ -65,7 +74,7 @@ testthat::test_that( "batchjob.execdProgramActionEmptyListOptionNULL", {
   
   # -- test
   
-  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list(), NULL ), 
+  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list( "not empty" ), NULL ), 
                           regexp = "^Expected options missing$" )
   
 })
@@ -75,7 +84,7 @@ testthat::test_that( "batchjob.execdProgramActionEmptyListOptionNA", {
   
   # -- test
   
-  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list(), NA ), 
+  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list( "not empty" ), NA ), 
                           regexp = "^Expected options missing$" )
   
 })
@@ -86,7 +95,7 @@ testthat::test_that( "batchjob.execdProgramActionEmptyListOptionNotList", {
   
   # -- test
   
-  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list(), as.character("xyz") ), 
+  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list( "not empty" ), as.character("xyz") ), 
                           regexp = "^Expected options missing$" )
   
 })
@@ -97,7 +106,7 @@ testthat::test_that( "batchjob.execdProgramActionEmptyListOptionWorkAreaNotDefin
   
   # -- test
   
-  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list(), list() ), 
+  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list( "not empty" ), list() ), 
                           regexp = "^Work area is not defined or does not exist$" )
   
 })
@@ -116,7 +125,7 @@ testthat::test_that( "batchjob.execdProgramActionEmptyListOptionWorkAreaNotExist
   
   # -- test
   
-  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list(), list( "work.area" = test_workarea ) ), 
+  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list( "not empty" ), list( "work.area" = test_workarea ) ), 
                           regexp = "^Work area is not defined or does not exist$" )
   
 })
@@ -149,7 +158,7 @@ testthat::test_that( "batchjob.execdProgramActionEmptyListOptionJobIDMissing", {
   
   # -- test
   
-  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list(), list( "work.area" = test_workarea ) ), 
+  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list( "not empty" ), list( "work.area" = test_workarea ) ), 
                           regexp = "^Job is not identifiable$" )
   
 })
@@ -184,7 +193,7 @@ testthat::test_that( "batchjob.execdProgramActionEmptyListOptionJobIDNULL", {
   
   # -- test
   
-  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list(), test_opts ), 
+  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list( "not empty" ), test_opts ), 
                           regexp = "^Job is not identifiable$" )
   
 })
@@ -219,7 +228,7 @@ testthat::test_that( "batchjob.execdProgramActionEmptyListOptionJobIDNotCharacte
   
   # -- test
   
-  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list(), test_opts ), 
+  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list( "not empty" ), test_opts ), 
                           regexp = "^Job is not identifiable$" )
   
 })
@@ -255,7 +264,7 @@ testthat::test_that( "batchjob.execdProgramActionEmptyListOptionJobIDNotUUIDForm
   
   # -- test
   
-  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list(), test_opts ), 
+  testthat::expect_error( cxlib:::.cxlib_batchjob_execd_program( list( "not empty" ), test_opts ), 
                           regexp = "^Job is not identifiable$" )
   
 })
@@ -286,7 +295,7 @@ testthat::test_that( "batchjob.execdProgramActionMissingActionID", {
   
   
   # -- test action
-  test_action <- list()
+  test_action <- list( "not empty" )
   
   
   # -- test options

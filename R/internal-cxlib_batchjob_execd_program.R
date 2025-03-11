@@ -49,7 +49,7 @@
 
 .cxlib_batchjob_execd_program <- function( x, options ) {
   
-  if ( missing(x) || is.null(x) || any(is.na(x)) || ! inherits( x, "list") )
+  if ( missing(x) || is.null(x) || (length(x) == 0) || is.na(utils::head( x, n = 1)) || ! inherits( x, "list") )
     stop( "Action missing or invalid")
   
   if ( missing(options) || is.null(options) || any(is.na(options)) || ! inherits( options, "list") )
