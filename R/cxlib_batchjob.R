@@ -608,9 +608,9 @@ cxlib_batchjob$methods( "submit" = function( wait = TRUE ) {
 
   # - add execution routine
   job_r <- append( job_r, 
-                   " ",
-                   "# execute job actions", 
-                   paste0( "cxlib:::.cxlib_batchjob_execd( \"", .self$.attr[["paths"]][[".job"]], "\", work = \"", .self$.attr[["paths"]]["work.area"], "\" )" ) )
+                   c( " ",
+                      "# execute job actions", 
+                      paste0( "cxlib:::.cxlib_batchjob_execd( \"", .self$.attr[["paths"]][[".job"]], "\", work = \"", .self$.attr[["paths"]]["work.area"], "\" )" ) ) )
   
   
   # - create job runner
@@ -660,10 +660,10 @@ cxlib_batchjob$methods( "submit" = function( wait = TRUE ) {
   
   
   # - submit the job runner to run in the background  
-
+  
   rc <- try( callr::rcmd_bg( "BATCH",
                              cmdargs = batch_args,
-                             wd = cxlib::cxlib_standardpath( base::tempdir() ) ), 
+                             wd = cxlib::cxlib_standardpath( base::tempdir() ) ),
              silent = TRUE )
 
   if ( inherits( rc, "try-error") )
