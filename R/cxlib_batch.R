@@ -2,9 +2,9 @@
 #' 
 #' @param x A job
 #' @param options List of options for executing R programs
-#' @param silent Disable messaging
+#' @param silent Disable verbose messaging
 #' 
-#' @return Named list of execution results
+#' @return Invisible list of actions
 #' 
 #' @description
 #' 
@@ -28,16 +28,18 @@
 #' Program output locations is specified using the `@cx.output` annotation. It is 
 #' assumed that the output location is a directory.
 #' 
-#' Only files created, updated or deleted in the output directory are returned 
-#' in addition to the program log.
+#' Only files created, updated or deleted in an annotated output directory are
+#' returned in addition to the program log.
 #' 
 #' The function supports different execution options.
 #' 
-#' The `logs` option is the directory where logs are stored. If the option is 
-#' `NULL`, the program directory is used. 
+#' \itemize{
+#'   \item `logs` option is the directory where logs are stored. If the option is 
+#'         `NULL`, the program directory is used. 
+#'   \item `log.fileext` specifies te log file extension or suffix. Default is the
+#'         standard `Rout`. 
+#' }
 #' 
-#' The `log.fileext` specifies te log file extension or suffix. Default is the
-#' standard `Rout`. 
 #' 
 #' 
 #' @export
@@ -45,236 +47,91 @@
 
 cxlib_batch <- function( x, options = list( "logs" = NULL, "log.fileext" = "Rout" ), silent = FALSE ) {
 
-  # -- not yet implemented
-  trace <- FALSE
+
+  # -- initiate job object
+  job <- cxlib_batchjob( list( "programs" = x, "options" = options ) )
   
   
-  # -- generate job ID
-  #    note: job ID is in the UUID format
-  exec_record <- list( "job.id" = cxlib:::.cxlib_referenceid( type = "uuid" ) )
+  # -- submit job
+  job$submit( wait = TRUE )
+  
+  
+  # -- job details
+  job_details <- job$details()
   
 
-
-  # -- identify execution mode
   
-  # currently only supported
-  exec_mode <- "locafs"
-  
-  
-  
-  
-  # -- stage 
-  #    note: initializes execution results with execution definition
-  
-  exec_job <- cxlib:::.cxlib_batch_localfs_stage( x, options = options )
-
-
-  if ( ! "work.area" %in% names(exec_job) )
-    stop( "Work area is not defined in job execution definition" )
-    
-  
-  on.exit({
-    base::unlink( exec_job[["work.area"]], recursive = TRUE, force = TRUE )
-  }, add = TRUE )
-  
-  
-  # -- execute
-  
-  for ( xi in 1:length(exec_job[["actions"]]) ) {
-    
-    if ( trace ) 
-      cat ( c( " ", 
-               paste( rep_len("-", 60), collapse = "" ),
-               paste0( "Action #", as.character(xi)),
-               " "),
-            sep = "\n" )
-      
-
-
-    if ( ! "type" %in% names(exec_job[["actions"]][[xi]]) )
-      next()
-    
-    if ( exec_job[["actions"]][[xi]][["type"]] == "program" ) {
-    
-      # ensure program file exists
-      if ( ! "path" %in% names(exec_job[["actions"]][[xi]]) || ! file.exists( file.path( exec_job[["work.area"]], exec_job[["actions"]][[xi]][["path"]], fsep = "/" ) ) )
-        next()
-      
-      if ( trace ) 
-        cat( paste( "Program", exec_job[["actions"]][[xi]][["path"]] ), sep = "\n" )
-      
-      
-      # program integrity check
-      if ( "sha1" %in% names(exec_job[["actions"]][[xi]]) && 
-           ( digest::digest( file.path( exec_job[["work.area"]], exec_job[["actions"]][[xi]][["path"]], fsep = "/" ), algo = "sha1", file = TRUE ) != exec_job[["actions"]][[xi]][["sha1"]] ) )
-        stop( "Program integrity check failed" )
-      
-
-      # - program options
-
-      # init with work area      
-      pgm_opt <- list( "work.area" = exec_job[["work.area"]] )
-      
-      # add log
-      if ( "log" %in% names(exec_job[["actions"]][[xi]]) && "path" %in% names(exec_job[["actions"]][[xi]][["log"]]) )
-        pgm_opt[["log"]] <- exec_job[["actions"]][[xi]][["log"]]["path"]
-      
-      
-      # - execute the program 
-      exec_jresult <- cxlib:::.cxlib_programexec( exec_job[["actions"]][[xi]][["path"]], job.id = unname(exec_record[["job.id"]]), options = pgm_opt )
-      
-      
-      # - process results
-      
-      # log
-      if ( file.exists( file.path( exec_job[["work.area"]], exec_job[["actions"]][[xi]][["log"]]["path"], fsep = "/" ) ) )
-        exec_job[["actions"]][[xi]][["log"]]["sha1"] <- exec_jresult[["log"]]["sha1"]
-      
-      # copy results to the action 
-      
-      for ( xentry in c( "id", "files.input", "files.created", "files.updated", "files.deleted", "start.time",  "end.time" ) )
-        exec_job[["actions"]][[xi]][ xentry ] <- exec_jresult[ xentry ]
-      
-
-    } # end of if-statement for type program
-    
-
-  } # end of for-statement across actions
-
-  
-  # -- publish
-  exec_publish <- cxlib:::.cxlib_batch_localfs_publish( exec_job )
-
-  # add to execution record
-  exec_record <- append( exec_record, exec_publish )  
+  # -- save results
+  job$save()
   
 
-  # -- non-silent report
+  # -- delete job
+  job$delete()
+
   
-  if ( ! silent ) {
+  if ( silent )
+    return(invisible(job_details))
+  
+  
+  # -- show action result status
+  
+  msgs <- paste( "Job ID ", job_details[["id"]] )
+  
+  
+  # - inputs
+  
+  if ( ! "inputs" %in% names(job_details) )
+    msgs <- append( msgs, c( " ", "No input files identified" ) )
+  
+  if ( "inputs" %in% names(job_details) ) {
+   
+    msgs <- append( msgs, c( " ", 
+                             "Inputs", 
+                             paste( base::rep_len("-", 60), collapse = "") ) )
     
-    # - add header
-    notes <- c( " ", 
-                paste( rep_len("-", 60), collapse = "" ) )
-    
-    # - add job
-    notes <- append( notes, 
-                     paste( "Job", exec_record[["job.id"]], sep = "  " ) )
-    
-    
-    # - add inputs
-    notes <- append( notes, 
-                     c( " ", 
-                        "Input files",
-                        paste( rep_len("-", 40), collapse = "" )))
-    
-    if ( length( exec_record[["inputs"]]) == 0 )
-      notes <- append(notes, "None")
-    
-    
-    if ( length( exec_record[["inputs"]]) > 0 )
-      for ( xinput in exec_record[["inputs"]] )
-        notes <- append( notes, 
-                         c( xinput["path"], 
-                            paste0( "(SHA-1: ", xinput["sha1"], ")" ), 
-                            " ") )
-    
-    
-    # - add actions
-    notes <- append( notes, 
-                     c( " ", 
-                        "Actions",
-                        paste( rep_len("-", 40), collapse = "" )))
-    
-    
-    if ( length( exec_record[["actions"]]) == 0 )
-      notes <- append(notes, "No actions on record")
-    
-    
-    if ( length( exec_record[["actions"]]) > 0 )
-      for ( xi in 1:length(exec_record[["actions"]]) ) {
+     
+    for ( xinput in job_details[["inputs"]] )
+      msgs <- append( msgs, 
+                      c( xinput[["path"]],
+                         paste0( "(SHA-1: ", xinput[["sha1"]], ")"), 
+                         " ") )
 
-        if ( "program" %in% exec_record[["actions"]][[xi]][["type"]] ) {
-          
-          str_label <- paste0( "#", as.character(xi), " Executed program")
-          
-          notes <- append( notes, 
-                           c( " ",
-                              str_label,
-                              paste( rep_len("-", base::nchar(str_label) + 2 ), collapse = "" ),
-                              exec_record[["actions"]][[xi]][["path"]],
-                              paste0( "(SHA-1: ", exec_record[["actions"]][[xi]]["sha1"], ")" ),
-                              " ",
-                              paste( "Log", exec_record[["actions"]][[xi]][["log"]]["path"] ),
-                              paste0( "(SHA-1: ", exec_record[["actions"]][[xi]][["log"]]["sha1"], ")" ), 
-                              " ",
-                              paste( "Started   ", exec_record[["actions"]][[xi]]["start.time"] ),
-                              paste( "Completed ", exec_record[["actions"]][[xi]]["end.time"] ),
-                              " "
-                             ))
-          
-
-        }  # end of if-statement for type program
-        
-      } # end of for-statement on exec_record actions element
-    
-    
-    
-    
-    # - add outputs
-    notes <- append( notes, 
-                     c( " ", 
-                        "Output files",
-                        paste( rep_len("-", 40), collapse = "" )))
-    
-    if ( length( exec_record[["outputs"]]) == 0 )
-      notes <- append(notes, "None")
-    
-    
-    if ( length( exec_record[["outputs"]]) > 0 )
-      for ( xoutput in exec_record[["outputs"]] )
-        notes <- append( notes, 
-                         c( xoutput["path"], 
-                            paste0( "(SHA-1: ", xoutput["sha1"], ")" ), 
-                            " ") )
-    
-    
-    
-    # - add deleted
-    notes <- append( notes, 
-                     c( " ", 
-                        "Deleted files",
-                        paste( rep_len("-", 40), collapse = "" )))
-    
-    if ( length( exec_record[["deleted"]]) == 0 )
-      notes <- append(notes, "None")
-    
-    
-    if ( length( exec_record[["deleted"]]) > 0 )
-      for ( xdeleted in exec_record[["deleted"]] )
-        notes <- append( notes, 
-                         c( xdeleted["path"], 
-                            paste0( "(SHA-1: ", xdeleted["sha1"], ")" ), 
-                            " ") )
-    
-    
-    
-    # - add footer
-    notes <- append( notes,
-                     c( " ", 
-                        paste( rep_len("-", 60), collapse = "" ),
-                        " ") )
-    
-    cat( notes, sep = "\n" )
-    
+    msgs <- append( msgs, c( "-- end of inputs -------", " " ) )
+                    
   }
 
   
   
+  # - actions  
+  if ( ! "actions" %in% names(job_details) )
+    msgs <- append( msgs, c( " ", "No actions registered" ) )
     
-  # -- return results
-  # return(invisible(exec_publish))
-  return(invisible(exec_record))
+  if ( "actions" %in% names(job_details) )
+    for ( xidx in 1:length(job_details[["actions"]]) ) {
+      
+      xact <- job_details[["actions"]][[ xidx ]]
+      
+      msgs <- append( msgs, 
+                      c( " ",
+                         paste0( "#", xidx, " ", xact[["type"]] ), 
+                         paste( base::rep_len("-", 60), collapse = ""),
+                         xact[["path"]],
+                         paste0( "(SHA-1: ", xact[["sha1"]], ")") ) )
+      
+      if ( xact[["type"]] == "program" )
+        msgs <- append( msgs, 
+                        c( " ", 
+                           paste0( "Log  ", xact[["log"]][["path"]]), 
+                           paste0( "     (SHA-1: ", xact[["log"]][["sha1"]], ")" ), 
+                           " " ) )
+
+  }
+    
   
+  # - display messaging
+  cat( msgs, sep = "\n" )
+    
+
+  return(invisible(job_details))
 }
   

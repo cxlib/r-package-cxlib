@@ -23,6 +23,7 @@
 #' comment and is ignored.
 #'
 #' Trailing and leading white space is ignored.
+#' 
 #'
 #' @examples
 #'

@@ -17,7 +17,7 @@ Download and install the latest release of cxlib from https://github.com/cxlib/r
 You can also install the latest release directly using `install.packages()`.   
 
 ```
-install.packages( "https://github.com/cxlib/r-package-cxlib/releases/download/v0.1.0/cxlib_0.1.0.tar.gz", type = "source", INSTALL_opts = "--install-tests" )
+install.packages( "https://github.com/cxlib/r-package-cxlib/releases/download/v0.2.0/cxlib_0.2.0.tar.gz", type = "source", INSTALL_opts = "--install-tests" )
 ```
 
 To install prior releases, replace the version number references in the URL.
@@ -43,12 +43,14 @@ cxlib::cxlib_batch( c( "path/to/my/first_program.R", "path/to/my/second_program.
                     options = list( "logs" = "path/to/my/logs", "log.fileext" = "log" ) )
 ```
 
+The options can also be configured centrally using the `cxlib.properties` file stored in the root of the cxlib package install directory.
+
 <br/>
 
 ### Paths and the Work Area
 The cxlib package was developed for use with repositories,  containers and traditional R IDE's, meaning that all paths are relative to the directory structure that is consistent across development and analysis environments, containers, etc. A good practice is to set the R session working directory to the root of the repository as that should be consistent regardless of environment and where the repository is cloned.
 
-A simple `cxlib_batch()` concept is that all paths are _relative_ to the current working directory, representing the repository root. 
+A simple `cxlib_batch()` concept is that all paths are _relative_ to the current working directory, such as the repository root. 
 
 All programs are also executed in a temporary directory structure, the _work area_ (that is how we can audit the program execution without extra software and licenses or impacting IT operations). The directory structure required for the submitted programs are recreated in the work area, including staging program files, all specified inputs and output directory structures (see Annotations).
 
@@ -61,16 +63,15 @@ _The default R session working directory for submitted programs is set to the wo
 ### Annotations
 The cxlib package features use annotations within programs to provide the necessary controls instead of external control lists or configuration files. 
 
-An annotation is a special comment using the standard format `# @keyword value`,
+A cxlib annotation is a special comment using the standard format `# @cx.keyword value`. Annotations can be repeated as much as needed and defined anywhere 
+in a program, allowing you to annotate where inputs are used and where the outputs are created. 
 
-The annotation can be defined anywhere in a program, allowing you to annotate where the input is used and where the output is created. 
-
-One or more spaces delimit the annotation keyword and value. Leading and trailing spaces of the value are trimmed. Any white space before the `#` symbol and between the `#`and `@` symbols are disregarded to allow indentation aligned with code and other comments.
+One or more spaces delimit the annotation keyword and value. Leading and trailing spaces of the value are trimmed. Any white space before the `#` symbol and between the `#`and `@` symbols are ignored to allow indentation aligned with code and other comments.
 
 The following annotations are supported.
 
-+ `cx.input` - Input files
-+ `cx.output` - Output directories
++ `cx.input` - Input file or a directory of files
++ `cx.output` - Output directory
 
 Annotations not supported are ignored. 
 

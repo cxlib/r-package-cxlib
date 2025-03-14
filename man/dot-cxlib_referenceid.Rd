@@ -18,5 +18,11 @@ Type equal to \code{uuid} returns a secure random UUID
 Type equal to \code{sha} or \code{raw} returns the SHA-1 of the UUID
 
 Type equal to \code{NULL} returns formatted SHA-1 of the UUID
+
+The \code{type} may also refer to the ID for a specific context. Valid contexts are
+\itemize{
+\item \code{job} refers to the ID of a Job
+\item \code{action} refers to the ID of a Job action
+}
 }
 \keyword{internal}
