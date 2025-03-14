@@ -14,7 +14,7 @@
 #' is referred to by `context/<property>`. 
 #' 
 #' Property file syntax and conventions are specified in the help reference for 
-#' function \link[cxapp]{cxapp_propertiesread}.
+#' function \link[cxlib]{cxlib_propertiesread}.
 #' 
 #' Class initialization first searches for `cxlib.properties` in predefined locations
 #' with the first occurrence used. The search sequence is defined as 
@@ -170,7 +170,7 @@ cxlib_config$methods( "initialize" = function( x ) {
   
   for ( xpath in .self$.attr[[".internal"]][["property.files"]] ) {
     
-    props <- cxapp::cxapp_propertiesread( xpath )
+    props <- cxlib::cxlib_propertiesread( xpath )
     names(props) <- base::tolower(names(props))
     
     xcontext <- base::basename( tools::file_path_sans_ext( xpath ) )

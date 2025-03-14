@@ -15,10 +15,10 @@ cxlib_batch(
 
 \item{options}{List of options for executing R programs}
 
-\item{silent}{Disable messaging}
+\item{silent}{Disable verbose messaging}
 }
 \value{
-Named list of execution results
+Invisible list of actions
 }
 \description{
 A job is a list of tasks to be executed. In its simplest form, it one or more
@@ -41,14 +41,15 @@ included.
 Program output locations is specified using the \verb{@cx.output} annotation. It is
 assumed that the output location is a directory.
 
-Only files created, updated or deleted in the output directory are returned
-in addition to the program log.
+Only files created, updated or deleted in an annotated output directory are
+returned in addition to the program log.
 
 The function supports different execution options.
 
-The \code{logs} option is the directory where logs are stored. If the option is
+\itemize{
+\item \code{logs} option is the directory where logs are stored. If the option is
 \code{NULL}, the program directory is used.
-
-The \code{log.fileext} specifies te log file extension or suffix. Default is the
+\item \code{log.fileext} specifies te log file extension or suffix. Default is the
 standard \code{Rout}.
+}
 }
