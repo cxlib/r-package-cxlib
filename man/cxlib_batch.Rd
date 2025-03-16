@@ -52,4 +52,42 @@ The function supports different execution options.
 \item \code{log.fileext} specifies te log file extension or suffix. Default is the
 standard \code{Rout}.
 }
+
+The options can also be defined in the \code{cxlib.properties} file
+(see \link[cxlib]{cxlib_config}.
+
+Options specified in the call to \code{cxlib_batch} takes precedence over options
+defined in cxlib properties.
+}
+\examples{
+
+\dontrun{
+# note: all paths are relative to the working directory
+
+ 
+# -- run an R program
+# not run
+
+cxlib_batch( "path/to/my/program.R" )
+
+
+# -- run a list of R programs
+# not run
+
+program_list <- c( "path/to/programs/program_1.R", "path/to/programs/program_2.R" )
+cxlib_batch( program_list )
+
+
+# -- alternate folder for logs
+# not run
+
+cxlib_batch( "path/to/my/program.R", options = list( "logs" = "path/to/logs" ) )
+
+
+# -- alternate file extension for logs
+# not run
+
+cxlib_batch( "path/to/my/program.R", options = list( "log.fileext" = "log" ) )
+}
+
 }

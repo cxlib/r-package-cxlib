@@ -6,8 +6,12 @@
 \alias{cxlib_batchjob}
 \title{A reference class representing a cxlib batch job}
 \description{
-A utility class representing a cxlib batch job. A job can be identified by
-an existing Job ID or a vector of program paths or a job definition to execute.
+A utility class representing a cxlib batch job. This utility is not accessed
+directly but the mechanisms and methods for \link[cxlib]{cxlib_batch} and services
+implementing R jobs and associated actions.
+
+A job can be identified by an existing Job ID or a vector of program paths or
+a job definition to execute.
 
 A batch job consists of a set of actions, which in the current implementation
 is limited to an ordered sequence of one or more programs. The programs can
@@ -17,24 +21,35 @@ part of the job definition.
 \emph{Note: All paths, including program annotations, are relative to the
 current working directory.}
 
-If the \code{cxlib_batchjob} is initialized with a single character string in the
+The job actions can be specified as part of object initialization, using the
+\code{add(x)} method or both. Note that an added action cannot be removed and
+actions added to a job with existing actions will append the actions to the
+existing list.
+
+If \code{cxlib_batchjob} is initialized with a single character string in the
 format of a valid Job ID, it is assumed the string represents an existing Job.
 
-A vector of program paths can be specified as input. The program paths in the
-specified order becomes the new Job definition.
+A vector of program paths can be specified as input during initialization or
+to the \code{add()}method. The program paths in the specified order becomes the
+new Job definition.
 
-A job definition provided as input is a list of named entries, with only \code{programs}
-required.
+A job definition can be provided as input in the form of a list of named entries,
+with only \code{programs} required.
 
 \itemize{
 \item \code{programs} a vector of program paths in the order of execution
 \item \code{id} a predefined Job ID in UUID format (see \link[uuid]{UUIDgenerate})
+\item \code{archive} with inputs and programs provided as the contents of a job archive
 \item \code{options} sets one or more options (see below) for the submitted Job
-
 }
 
+A job \code{archive} is a Zip file (see \link[zip]{zip}) that contains all programs
+and required input files. The root of the Zip-file internal directory structure
+represents the working directory for the executing actions.
+
 The following options are supported as part of a Job definition or as a cxlib
-property (see process options below).
+property (see process options below). Options can only be defined during
+\code{cxlib_batchjob()} initialization.
 
 \itemize{
 \item \code{LOGS} defines the standard directory path for logs
@@ -45,7 +60,7 @@ If the option is defined as both part of the Job and a property, the job
 definition takes precedence.
 
 Processing options can be defined as part of a Job definition or through cxlib
-properties (see \link{cxlib_config}).
+properties (see \link[cxlib]{cxlib_config}).
 
 The following options sets the locations of for processing.
 \itemize{
@@ -57,13 +72,18 @@ If not defined, the directory \code{PATH} is used. The \code{WORKPATH} is the
 parent directory to job working directories.
 }
 
-The method \code{sumbit()} submits the registered actions for processing. Actions
-are executed in a standalone R session. If \code{WAIT} is equal to \code{FALSE}, the
-R session is executed in the background.
+The method \code{submit( wait = TRUE )} submits the registered actions for processing.
+Actions are executed in a standalone R session. If \code{WAIT} is equal to \code{FALSE},
+the R session is executed in the background.
 
-The \code{save()} methods saves the action results to the current working directory.
+The \code{save()} methods saves the action results to the current working directory
+on the R session local file system.
 
-The \code{delete()} method deletes the directories associated with the job.
+The \code{archive(x)} methods creates a Zip-file archive \code{x} containing the results
+of the job actions, with root of the Zip-file representing the job working
+directory. The method invisibly returns the path to the Zip-file archive.
+
+The \code{delete()} method deletes the temporary directories associated with the job.
 
 The experimental method \code{actions()} returns a list of actions and their status.
 
@@ -83,6 +103,10 @@ job actions and status.
 
 \describe{
 \item{\code{actions()}}{List actions}
+
+\item{\code{add(x)}}{Add job actions}
+
+\item{\code{archive(x)}}{Create an archive of job results}
 
 \item{\code{delete()}}{Delete job areas}
 
