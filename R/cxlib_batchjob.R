@@ -85,9 +85,10 @@
 #' The `save()` methods saves the action results to the current working directory
 #' on the R session local file system.
 #' 
-#' The `archive(x)` methods creates a Zip-file archive `x` containing the results
-#' of the job actions, with root of the Zip-file representing the job working
-#' directory. The method invisibly returns the path to the Zip-file archive.
+#' The `archive()` method creates a standard Zip-file archive `job-<id>-results.zip` 
+#' containing the results of the job actions, with root of the Zip-file 
+#' representing the job working directory. The method invisibly returns the
+#' path to the Zip-file archive.
 #' 
 #' The `delete()` method deletes the temporary directories associated with the job.
 #'
@@ -719,24 +720,38 @@ cxlib_batchjob$methods( "submit" = function( wait = TRUE ) {
   
   
   # -- set up job runner
-  
   job_r <- c( format( as.POSIXct( Sys.time(), tz = "UTC"), format = "# Job runner created %Y-%m-%d %H:%M:%S %Z" ), 
               paste( "# Job ID:  ", .self$.attr[["id"]] ) )
   
 
   # - transient working directory
-
   job_r <- append( job_r, 
                    c( " ",
                       "# transient working directory",
                       "base::setwd( base::tempdir() )" ) )
-                   
 
+  
+  # - results archive
+  if ( wait ) 
+    job_r <- append( job_r, 
+                     c( " ",
+                        "# do not archive results",
+                        "archive_results <- FALSE" ) )
+                        
+
+  if ( ! wait ) 
+    job_r <- append( job_r, 
+                     c( " ",
+                        "# archive results",
+                        "archive_results <- TRUE" ) )
+  
+
+  
   # - add execution routine
   job_r <- append( job_r, 
                    c( " ",
                       "# execute job actions", 
-                      paste0( "cxlib:::.cxlib_batchjob_execd( \"", .self$.attr[["paths"]][[".job"]], "\", work = \"", .self$.attr[["paths"]]["work.area"], "\" )" ) ) )
+                      paste0( "cxlib:::.cxlib_batchjob_execd( \"", .self$.attr[["paths"]][[".job"]], "\", work = \"", .self$.attr[["paths"]]["work.area"], "\", archive.results = archive_results )" ) ) )
   
   
   # - create job runner
@@ -997,148 +1012,12 @@ cxlib_batchjob$methods( "save" = function() {
 
 
 
-cxlib_batchjob$methods( "archive" = function(x) {
+cxlib_batchjob$methods( "archive" = function() {
   "Create an archive of job results"
+  
+  results_archive <- file.path( .self$.attr[["paths"]][".job"], paste0( "job-", .self$.attr[["id"]], "-results.zip" ), fsep = "/" )
 
-
-  # -- get actions
-  action_lst <- .self$actions()
-  
-  
-  # -- futility ... integrity checks and actions completed 
-  
-  for ( xact in action_lst ) {
-    
-    # - action should be completed
-    if ( ! "status" %in% names(xact) || ! xact[["status"]] %in% c( "complete", "completed" ) )
-      stop( "Not all actions have completed")
-    
-    
-    # - program action integrity
-    
-    if ( "type" %in% names(xact) && (base::toupper(xact[["type"]]) == "PROGRAM") ) {
-      
-      src_pgm <- file.path( cxlib::cxlib_standardpath(base::getwd()), xact[["path"]], fsep = "/" )
-      
-      if ( ! file.exists( src_pgm ) )
-        stop( "The source for the program ", xact[["path"]], " no longer exists" )
-      
-      if ( ! "sha1" %in% names(xact) || ( digest::digest( src_pgm, algo = "sha1", file = TRUE ) != xact[["sha1"]] ) )
-        stop( "The program ", xact[["path"]], " has changed since submitted or integrity cannot be verified" )
-      
-      if ( ! "log" %in% names(xact) || ! "path" %in% names(xact[["log"]]) )
-        stop( "Expecting log details for a program action" )
-      
-      
-      if ( ! file.exists( file.path( .self$.attr[["paths"]]["work.area"], xact[["log"]][["path"]], fsep = "/" ) ) )
-        stop( "Expecting log file to exist as a result of a program action")
-      
-      
-      src_log <- file.path( cxlib::cxlib_standardpath(base::getwd()), xact[["log"]][["path"]], fsep = "/" )
-      
-      if ( file.exists( src_log ) && 
-           ( ! "reference.sha1" %in% names(xact[["log"]]) ||
-             is.na(xact[["log"]][["reference.sha1"]]) ) )
-        stop( "A new program log exists while it did not exist when the program action was submitted" )
-      
-      if ( "reference.sha1" %in% names(xact[["log"]]) &&
-           ! is.na(xact[["log"]][["reference.sha1"]]) && 
-           file.exists( src_log ) &&
-           ( digest::digest( src_log, algo = "sha1", file = TRUE ) != xact[["log"]][["reference.sha1"]] ) )
-        stop( "The program log in the output location has been updated and could indicate that the program was executed in parallel" )
-      
-    }  # end of if-statement for action type program
-    
-    
-  } # end of for-statement across actions for integrity checks and completed actions
-  
-  base::rm( list = "xact" )
-  
-  
-  
-  # -- initiate file system events to process
-  
-  files_to_write <- character(0)
-  files_to_delete <- character(0)
-  
-  logs_to_write <- character(0)
-  
-  
-  # -- process actions
-  #    note: one action at a time as files created in one may be deleted in another
-  
-  for ( xact in action_lst ) {
-    
-    
-    # - action log
-    if ( "log" %in% names(xact) && "path" %in% names(xact[["log"]]) )
-      logs_to_write <- base::unique( append( logs_to_write, xact[["log"]][["path"]] ) )
-    
-    
-    # - look for annotated output locations ... none means nothing to do
-    
-    if ( ! "annotations" %in% names(xact) || ! "output" %in% names(xact[["annotations"]]) )
-      next()
-    
-    out_anno <- xact[["annotations"]][["output"]]
-    
-    
-    # - process deleted files in annotated output locations
-    
-    if ( "files.deleted" %in% names(xact) ) {
-      
-      for ( xtodelete in xact[["files.deleted"]] ) {
-        
-        # futility ... file not in output location 
-        if ( ! base::dirname( xtodelete[["path"]] ) %in% out_anno )
-          next()
-        
-        # register file to be deleted
-        files_to_delete <- base::unique( append( files_to_delete, xtodelete[["path"]] ) )
-        
-        # updated files to write excluding those that were deleted
-        files_to_write <- files_to_write[ ! files_to_write %in% files_to_delete ]
-        
-      }
-      
-      rm( list = "xtodelete")
-    }
-    
-    
-    # - process created or updated files in annotated output locations
-    
-    for ( xscope in c( "files.created", "files.updated" ) )
-      if ( xscope %in% names(xact) ) {
-        
-        for ( xtowrite in xact[[xscope]] ) {
-          
-          # futility ... file not in output location 
-          if ( ! base::dirname( xtowrite[["path"]] ) %in% out_anno )
-            next()
-          
-          # register file to be written 
-          files_to_write <- base::unique( append( files_to_write, xtowrite[["path"]] ) )
-          
-          # update files to be deleted excluding those that are written
-          files_to_delete <- files_to_delete[ ! files_to_delete %in% files_to_write ]
-          
-        }
-        
-        rm( list = "xtowrite" ) 
-      }
-    
-    
-    rm( list = "out_anno" )
-    
-  }  # end of for-statement across actions to determine writes and deletes 
-  
-  
-  
-  # -- create archive
-  
-  zip_archive <- zip::zip( x, base::unique( c(logs_to_write, files_to_write)), root = .self$.attr[["paths"]]["work.area"] )
-  
-  return(invisible( zip_archive ))
+  return(invisible( cxlib:::.cxlib_batchjob_resultsarchive( results_archive, job.path = .self$.attr[["paths"]][".job"], work.path = .self$.attr[["paths"]]["work.area"]) ))
 })
 
 
