@@ -175,10 +175,6 @@ testthat::test_that( "batchjob.resultsArchiveProgramsAnnoInputsOutputs", {
   
   
   
-  # - test archive 
-  
-  test_archive <- cxlib::cxlib_standardpath( base::tempfile( pattern = "test-archive-", tmpdir = test_root, fileext = ".zip") )
-  
 
   # - job ID
   test_id <- cxlib:::.cxlib_referenceid( type = "job" )
@@ -195,7 +191,7 @@ testthat::test_that( "batchjob.resultsArchiveProgramsAnnoInputsOutputs", {
   
   # -- test
   
-  result <- test_job$archive( test_archive )
+  result <- test_job$archive()
   
   
   
@@ -212,17 +208,18 @@ testthat::test_that( "batchjob.resultsArchiveProgramsAnnoInputsOutputs", {
   # - expected outputs
   expected_outputs <- test_output_refs
   
+
+  # - expected work area sha1
+  expected_work_sha1 <- sapply( list.files( file.path( test_jobpath, test_id, ".work", fsep = "/"), recursive = TRUE, all.files = TRUE), function(x) {
+    digest::digest( file.path( test_jobpath, test_id, ".work", x, fsep = "/" ), alg = "sha1", file = TRUE )
+  }, USE.NAMES = TRUE )  
   
+  
+    
   # - expected archive
-  expected_archive <- test_archive
+  expected_archive <- file.path( test_jobpath, expected_id, ".job", paste0( "job-", expected_id, "-results.zip") )
   expected_archive_files <- append( expected_logs, expected_outputs )
-  
-  
-  # - expected sha1
-  expected_sha1 <- sapply( expected_archive_files, function(x) {
-    digest::digest( file.path( test_jobpath, expected_id, ".work", x, fsep = "/" ), alg = "sha1", file = TRUE )
-  }, USE.NAMES = TRUE )
-  
+  expected_archive_sha1 <- expected_work_sha1[ expected_archive_files ]
   
   
   # -- assertions
@@ -253,7 +250,7 @@ testthat::test_that( "batchjob.resultsArchiveProgramsAnnoInputsOutputs", {
     digest::digest( file.path( result_archive_ext, x, fsep = "/" ), alg = "sha1", file = TRUE )
   }, USE.NAMES = TRUE )
 
-  testthat::expect_equal( result_archive_sha1[ sort(expected_archive_files) ], expected_sha1[ sort(expected_archive_files) ] )
+  testthat::expect_equal( result_archive_sha1[ sort(expected_archive_files) ], expected_archive_sha1[ sort(expected_archive_files) ] )
 
   
 })

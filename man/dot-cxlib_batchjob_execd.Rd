@@ -4,12 +4,14 @@
 \alias{.cxlib_batchjob_execd}
 \title{Internal function to execute actions of a batch job}
 \usage{
-.cxlib_batchjob_execd(x, work = NULL)
+.cxlib_batchjob_execd(x, work = NULL, archive.results = FALSE)
 }
 \arguments{
 \item{x}{Directory path to job actions}
 
 \item{work}{Work area directory}
+
+\item{archive.results}{Generate results archive}
 }
 \value{
 Invisible NULL
@@ -38,5 +40,10 @@ The routine is persistent and will continue to execute until all actions have
 been completed.
 
 Signal interrupts are currently not supported.
+
+The option \code{archive.results} equal to \code{TRUE} will archive the job results
+after the last task is completed. The results archive \verb{job-<job id>-results.zip}
+will be created and saved in the internal job directory and the job work area
+will be automatically deleted.
 }
 \keyword{internal}

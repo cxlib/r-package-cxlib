@@ -2,6 +2,7 @@
 #' 
 #' @param x Directory path to job actions
 #' @param work Work area directory 
+#' @param archive.results Generate results archive
 #' 
 #' @return Invisible NULL
 #' 
@@ -30,9 +31,15 @@
 #' 
 #' Signal interrupts are currently not supported.
 #' 
+#' The option `archive.results` equal to `TRUE` will archive the job results 
+#' after the last task is completed. The results archive `job-<job id>-results.zip`
+#' will be created and saved in the internal job directory and the job work area
+#' will be automatically deleted.
+#' 
+#' 
 #' @keywords internal
 
-.cxlib_batchjob_execd <- function( x, work = NULL ) {
+.cxlib_batchjob_execd <- function( x, work = NULL, archive.results = FALSE ) {
   
   # -- constants
   supported_actions <- c( "PROGRAM" )
@@ -204,5 +211,18 @@
                     con = file.path( x, "job.json", fsep = "/" ) )
   
  
+  
+  # -- archive results
+  if ( archive.results ) {
+    
+    results_archive <- file.path( job_def[["paths"]][[".internal"]], paste0( "job-", job_def[["id"]], "-results.zip" ), fsep = "/" )
+    
+    cxlib:::.cxlib_batchjob_resultsarchive( results_archive, job.path = job_def[["paths"]][[".internal"]], work.path = job_def[["paths"]][["work.area"]] )
+    
+    base::unlink( job_def[["paths"]][["work.area"]], recursive = TRUE, force = TRUE )
+  }
+  
+  
+  
   return(invisible(TRUE))
 }

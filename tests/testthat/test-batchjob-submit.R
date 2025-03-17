@@ -474,33 +474,35 @@ testthat::test_that( "batchjob.submitSingleProgramWaitDisabled", {
   
   # - job id
   expected_id <- test_id
-  
-  
-  # - programs
-  expected_programs <- test_program_refs
-  
+
   
   # - logs
-  expected_logs <- paste0( tools::file_path_sans_ext( expected_programs ), ".Rout" ) 
+  expected_logs <- paste0( tools::file_path_sans_ext( test_program_refs ), ".Rout" ) 
+
+  
+  # - expected archive
+  expected_archive <- file.path( test_jobpath, test_id, ".job", paste0( "job-", expected_id, "-results.zip"), fsep = "/" )
+
+  expected_archive_files <- expected_logs
+  
+
   
   
   
   # -- assertions
   
-  
-  # - staged programs
-  
-  testthat::expect_true( all( file.exists( file.path( test_jobpath, expected_id, ".work", expected_programs, fsep = "/" ) ) ) )
-  
-  # - log
-  
-  testthat::expect_true( all( file.exists( file.path( test_jobpath, expected_id, ".work", expected_logs, fsep = "/" ) ) ) )
+  # - results archive
+  testthat::expect_true( file.exists( expected_archive ) )
   
   
-  # - ensure program acions executed
+  # - deleted work area 
+  testthat::expect_false( dir.exists( file.path( test_jobpath, expected_id, ".work", fsep = "/" ) ) ) 
+
   
-  result_log <- readLines( file.path( test_jobpath, expected_id, ".work", expected_logs, fsep = "/" ) )
-  testthat::expect_true( any(grepl( paste0( "^", test_reference, "$" ), result_log )) )
-  
+  # - inspect results archive
+  results_archive_contents <- zip::zip_list( expected_archive )
+
+  testthat::expect_equal( sort(results_archive_contents[, "filename"]), sort(expected_archive_files) )
+
 })
 
