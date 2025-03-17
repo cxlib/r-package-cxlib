@@ -79,9 +79,10 @@ the R session is executed in the background.
 The \code{save()} methods saves the action results to the current working directory
 on the R session local file system.
 
-The \code{archive(x)} methods creates a Zip-file archive \code{x} containing the results
-of the job actions, with root of the Zip-file representing the job working
-directory. The method invisibly returns the path to the Zip-file archive.
+The \code{archive()} method creates a standard Zip-file archive \verb{job-<id>-results.zip}
+containing the results of the job actions, with root of the Zip-file
+representing the job working directory. The method invisibly returns the
+path to the Zip-file archive.
 
 The \code{delete()} method deletes the temporary directories associated with the job.
 
@@ -106,7 +107,7 @@ job actions and status.
 
 \item{\code{add(x)}}{Add job actions}
 
-\item{\code{archive(x)}}{Create an archive of job results}
+\item{\code{archive()}}{Create an archive of job results}
 
 \item{\code{delete()}}{Delete job areas}
 
