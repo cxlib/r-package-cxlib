@@ -90,7 +90,7 @@ testthat::test_that( "batchjob.localProgramNotExist", {
   # -- test
   
   testthat::expect_error( cxlib::cxlib_batchjob( test_program ), 
-                          regexp = "^One or more specified programs do not exist$" )
+                          regexp = paste( "^Program", test_program, "does not exist$") )
   
 })
 
@@ -177,7 +177,7 @@ testthat::test_that( "batchjob.localJobDefProgramNotExist", {
   # -- test
   
   testthat::expect_error( cxlib::cxlib_batchjob( list( "programs" = test_program )), 
-                          regexp = "^One or more specified programs do not exist$" )
+                          regexp = paste( "^Program", test_program, "does not exist$") )
   
 })
 
@@ -275,7 +275,7 @@ testthat::test_that( "batchjob.localOneOfProgramsNotExist", {
   # -- test
   
   testthat::expect_error( cxlib::cxlib_batchjob( test_programs ), 
-                          regexp = "^One or more specified programs do not exist$" )
+                          regexp = paste( "^Program", utils::tail( test_programs, n = 1 ), "does not exist$" ) )
   
 })
 
@@ -373,7 +373,7 @@ testthat::test_that( "batchjob.localJobDefOneOfProgramsNotExist", {
   # -- test
   
   testthat::expect_error( cxlib::cxlib_batchjob( list( "programs" = test_programs ) ), 
-                          regexp = "^One or more specified programs do not exist$" )
+                          regexp = paste( "^Program", utils::tail( test_programs, n = 1 ), "does not exist$" ) )
   
 })
 
@@ -1443,3 +1443,4 @@ testthat::test_that( "batchjob.localJobDefProgramsPropAltLogPathExtOptionPrecede
   
   
 })
+

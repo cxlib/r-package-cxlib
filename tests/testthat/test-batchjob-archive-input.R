@@ -103,6 +103,12 @@ testthat::test_that( "batchjob.inputArchivePrograms", {
   zip::zip( test_archive, test_programs )
 
 
+  # - test hashes
+  test_sha1 <- sapply( list.files( test_wd, recursive = TRUE ), function(x) {
+    digest::digest( x, algo = "sha1", file = TRUE )
+  }, USE.NAMES = TRUE )
+  
+
 
   # - job ID
   test_id <- cxlib:::.cxlib_referenceid( type = "job" )
@@ -112,6 +118,7 @@ testthat::test_that( "batchjob.inputArchivePrograms", {
   # -- test
 
   result <- cxlib::cxlib_batchjob( list( "id" = test_id, 
+                                         "mode" = "archive",
                                          "programs" = test_programs,
                                          "archive" = test_archive ) )
 
@@ -130,6 +137,10 @@ testthat::test_that( "batchjob.inputArchivePrograms", {
   expected_programs <- test_programs
 
 
+  # - expected SHA-1
+  
+  expected_sha1 <- test_sha1
+  
 
   # - logs
 
@@ -155,10 +166,10 @@ testthat::test_that( "batchjob.inputArchivePrograms", {
 
     testthat::expect_equal( json_data[["type"]], "program" )
 
-    testthat::expect_equal( json_data[["path"]], test_programs[ action_idx ] )
-    testthat::expect_equal( json_data[["sha1"]],
-                            digest::digest( file.path( test_jobpath, expected_id, ".work", json_data[["path"]], fsep = "/" ), algo = "sha1", file = TRUE ) )
-
+    testthat::expect_equal( json_data[["path"]], expected_programs[ action_idx ] )
+    testthat::expect_equal( json_data[["sha1"]], unname(expected_sha1[ expected_programs[ action_idx ] ]) )
+    
+    
     testthat::expect_equal( json_data[["log"]][["path"]], expected_logs[ action_idx ] )
 
     testthat::expect_true( is.na( json_data[["log"]][["sha1"]] ) )
@@ -268,6 +279,14 @@ testthat::test_that( "batchjob.inputArchiveAddPrograms", {
   
   
   
+  # - test hashes
+  test_sha1 <- sapply( list.files( test_wd, recursive = TRUE ), function(x) {
+    digest::digest( x, algo = "sha1", file = TRUE )
+  }, USE.NAMES = TRUE )
+  
+  
+  
+  
   # - job ID
   test_id <- cxlib:::.cxlib_referenceid( type = "job" )
   
@@ -275,13 +294,15 @@ testthat::test_that( "batchjob.inputArchiveAddPrograms", {
   # - stage job
   
   test_job <- cxlib::cxlib_batchjob( list( "id" = test_id, 
+                                           "mode" = "archive",
                                            "programs" = utils::head( test_programs, n = 2 ) ) ) 
   
-  
+    
   # -- test
   
   test_job$add( list( "programs" = utils::tail( test_programs, n = 3 ),
                       "archive" = test_archive ) )
+  
   
   
   
@@ -298,12 +319,16 @@ testthat::test_that( "batchjob.inputArchiveAddPrograms", {
   expected_programs <- test_programs
   
   
+  # - expected SHA-1
+  
+  expected_sha1 <- test_sha1
+  
   
   # - logs
   
   expected_logs <- paste0( tools::file_path_sans_ext( test_programs ), ".Rout" )
   
-  
+
   
   # -- assertions
   
@@ -320,13 +345,12 @@ testthat::test_that( "batchjob.inputArchiveAddPrograms", {
     action_idx <- as.numeric( gsub( "(\\d+)-action-.*", "\\1", base::basename(xaction) ) )
     
     json_data <- jsonlite::fromJSON( xaction )
-    
+
     testthat::expect_equal( json_data[["type"]], "program" )
     
     testthat::expect_equal( json_data[["path"]], test_programs[ action_idx ] )
-    testthat::expect_equal( json_data[["sha1"]],
-                            digest::digest( file.path( test_jobpath, expected_id, ".work", json_data[["path"]], fsep = "/" ), algo = "sha1", file = TRUE ) )
-    
+    testthat::expect_equal( json_data[["sha1"]], unname(expected_sha1[ test_programs[ action_idx ] ]) )
+
     testthat::expect_equal( json_data[["log"]][["path"]], expected_logs[ action_idx ] )
     
     testthat::expect_true( is.na( json_data[["log"]][["sha1"]] ) )
@@ -500,17 +524,31 @@ testthat::test_that( "batchjob.inputArchiveProgramsAnnoInputsOutputs", {
   
   zip::zip( test_archive, c( test_program_refs, test_input_refs ), root = test_archive_src )
   
+  
+  
+  # - test hashes
+  test_sha1 <- sapply( list.files( test_archive_src, recursive = TRUE ), function(x) {
+    digest::digest( file.path( test_archive_src, x, fsep = "/" ), algo = "sha1", file = TRUE )
+  }, USE.NAMES = TRUE )
+  
+  
+  
 
   # - job ID
   test_id <- cxlib:::.cxlib_referenceid( type = "job" )
   
   
   
+  # - test job
+  
+  test_job <- cxlib::cxlib_batchjob( list( "id" = test_id, 
+                                           "archive" = test_archive ) )
+  
+  
+  
   # -- test
   
-  result <- cxlib::cxlib_batchjob( list( "id" = test_id, 
-                                         "programs" = test_program_refs,
-                                         "archive" = test_archive ) )
+  result <- test_job$add( test_program_refs )
   
   
   
@@ -526,6 +564,11 @@ testthat::test_that( "batchjob.inputArchiveProgramsAnnoInputsOutputs", {
   
   expected_programs <- test_program_refs
   
+  
+  # - expected SHA-1
+  
+  expected_sha1 <- test_sha1
+
   
   
   # - logs
@@ -560,9 +603,8 @@ testthat::test_that( "batchjob.inputArchiveProgramsAnnoInputsOutputs", {
     
     # sha1 on program
     testthat::expect_equal( json_data[["path"]], expected_programs[ action_idx ] )
-    testthat::expect_equal( json_data[["sha1"]],
-                            digest::digest( file.path( test_jobpath, expected_id, ".work", json_data[["path"]], fsep = "/" ), algo = "sha1", file = TRUE ) )
-    
+    testthat::expect_equal( json_data[["sha1"]], unname(expected_sha1[ expected_programs[ action_idx ] ] ) )
+
     # log
     testthat::expect_equal( json_data[["log"]][["path"]], expected_logs[ action_idx ] )
     testthat::expect_true( is.na( json_data[["log"]][["sha1"]] ) )

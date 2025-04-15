@@ -257,7 +257,7 @@ testthat::test_that( "batchjob.localProgramsAddExisting", {
   
   # -- test
   
-  test_job$add( utils::tail( test_programs, n = 3 ) )
+  test_job$add( utils::tail( test_programs, n = 2 ) )
 
   
   

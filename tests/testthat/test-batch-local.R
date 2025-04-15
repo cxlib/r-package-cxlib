@@ -85,7 +85,7 @@ testthat::test_that( "batch.ProgramNotExist", {
   # -- test
   
   testthat::expect_error( cxlib::cxlib_batch( test_program, silent = TRUE ),
-                          regexp = "^One or more specified programs do not exist$" )
+                          regexp = paste( "^Program", test_program, "does not exist$") )
   
   
 })
@@ -184,7 +184,7 @@ testthat::test_that( "batch.oneOfProgramsNotExist", {
   # -- test
   
   testthat::expect_error( cxlib::cxlib_batch( test_programs, silent = TRUE ), 
-                          regexp = "^One or more specified programs do not exist$" )
+                          regexp = paste( "^Program", utils::tail( test_programs, n = 1 ), "does not exist$") )
   
 })
 
@@ -870,3 +870,4 @@ testthat::test_that( "batch.localCleanedAltWork", {
   testthat::expect_length( list.files( test_jobpath, recursive = TRUE, all.files = TRUE, include.dirs = TRUE ), 0 )
   
 })
+
