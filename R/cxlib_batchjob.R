@@ -114,8 +114,8 @@ cxlib_batchjob$methods( "initialize" = function( x ) {
   "Create new batch job"
   
   
-  if ( missing(x) || is.null(x) || all(is.na(x)) || (length(x) == 0) || ! inherits( x, c("character", "list") ) )
-    stop( "Input is invalid or missing" )
+  # if ( missing(x) || is.null(x) || all(is.na(x)) || (length(x) == 0) || ! inherits( x, c("character", "list") ) )
+  #   stop( "Input is invalid or missing" )
   
   
 
@@ -640,7 +640,8 @@ cxlib_batchjob$methods( "actions" = function() {
   for ( xfile in lst_files ) {
     
     # xaction <- jsonlite::fromJSON( xfile, flatten = TRUE )
-    xaction <- jsonlite::fromJSON( xfile, simplifyDataFrame = FALSE )
+    # xaction <- jsonlite::fromJSON( xfile, simplifyDataFrame = FALSE )
+    xaction <- jsonlite::fromJSON( base::file( description = xfile, open = "rb", blocking = FALSE ), simplifyDataFrame = FALSE )
     
     xaction[["status"]] <- "planned"
     
