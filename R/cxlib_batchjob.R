@@ -8,6 +8,7 @@
 #' @method status status
 #' @method details details
 #' @method actions actions
+#' @method delete delete
 #' @method show show
 #' 
 #' 
@@ -110,19 +111,18 @@ cxlib_batchjob <- methods::setRefClass( "cxlib_batchjob",
                                         fields = list( ".attr" = "list") )
 
 
-cxlib_batchjob$methods( "initialize" = function( x ) {
+cxlib_batchjob$methods( "initialize" = function( x = NULL ) {
   "Create new batch job"
-  
-  
-  # if ( missing(x) || is.null(x) || all(is.na(x)) || (length(x) == 0) || ! inherits( x, c("character", "list") ) )
-  #   stop( "Input is invalid or missing" )
-  
-  
 
+
+  if ( any( is.na(x) ) || ! inherits( x, c( "character", "list" ) ) )
+    stop( "Input is invalid or missing" )
+  
+  
   # -- configuration options
   
   cfg <- cxlib::cxlib_config()
-
+  
   # - check PATH if set
   if ( ! is.na(cfg$option( "PATH", unset = NA )) && ! dir.exists(cfg$option( "PATH", unset = NA )) )
     stop( "The PATH configuration option directory ", cfg$option( "PATH", unset = NA ), " does not exist" )
@@ -130,29 +130,28 @@ cxlib_batchjob$methods( "initialize" = function( x ) {
   # - check WORKPATH if set
   if ( ! is.na(cfg$option( "WORKPATH", unset = NA )) && ! dir.exists(cfg$option( "WORKPATH", unset = NA )) )
     stop( "The WORKPATH configuration option directory ", cfg$option( "WORKPATH", unset = NA ), " does not exist" )
-  
-  
 
   
   # -- define the internal root directory path
   
   cxlib_root <- cxlib::cxlib_standardpath( cfg$option( "PATH", unset = file.path( base::tempdir(), ".cxlib" ) ) )
-
+  
   # - note: using unset = NA to indicate if it is set even though we already have derived cxlib_root  
   if ( is.na(cfg$option( "PATH", unset = NA )) && ! dir.exists( cxlib_root ) && ! dir.create( cxlib_root, recursive = TRUE ) )
-      stop( "Could not initiate defualt path" )
+    stop( "Could not initiate defualt path" )
 
   
 
-  # -- initialize internals 
+
+  # -- defaults 
   
   .self$.attr <- list( "id" = cxlib:::.cxlib_referenceid( type = "job" ), 
                        "mode" = "source",
                        "options" = list( "logs" = cfg$option( "LOGS", unset = NULL), 
                                          "log.fileext" = cfg$option( "LOG.FILEEXT", unset = "Rout" ) ),
-                       "paths" = c( "root" =  cxlib_root ) )
+                       "paths" = c( "root" =  cxlib_root ) )  
 
-  
+
 
   # -- default assumption of job state 
   as_new <- TRUE
@@ -162,7 +161,7 @@ cxlib_batchjob$methods( "initialize" = function( x ) {
   # -- job ID
   
   # - as an existing job id
-  if ( ! missing(x) && ! is.null(x) && inherits(x, "character") && (length(x) == 1) && all(uuid::UUIDvalidate(x)) ) {
+  if ( ! is.null(x) && inherits(x, "character") && (length(x) == 1) && all(uuid::UUIDvalidate(x)) ) {
     # not a new job
     
     as_new <- FALSE
@@ -172,7 +171,7 @@ cxlib_batchjob$methods( "initialize" = function( x ) {
   
   
   # - as part of a job definition
-  if ( ! missing(x) && ! is.null(x) && 
+  if ( ! is.null(x) && 
        inherits(x, c( "character", "list") ) && (length(x) >= 1) && "id" %in% base::tolower(names(x)) ) {
     # as a new job
     
@@ -630,33 +629,7 @@ cxlib_batchjob$methods( "add" = function(x) {
 cxlib_batchjob$methods( "actions" = function() {
   "List actions"
   
-  actions <- list()
-  
-  
-  lst_files <- base::sort( list.files( .self$.attr[["paths"]][".job"], 
-                                       pattern = "^\\d+-action-.*.(json|lck)$", 
-                                       recursive = FALSE, include.dirs = FALSE, full.names = TRUE ) )
-  
-  for ( xfile in lst_files ) {
-    
-    # xaction <- jsonlite::fromJSON( xfile, flatten = TRUE )
-    # xaction <- jsonlite::fromJSON( xfile, simplifyDataFrame = FALSE )
-    xaction <- jsonlite::fromJSON( base::file( description = xfile, open = "rb", blocking = FALSE ), simplifyDataFrame = FALSE )
-    
-    xaction[["status"]] <- "planned"
-    
-    if ( tools::file_ext( xfile) == "lck" )
-      xaction[["status"]] <- "executing"
-    
-    if ( grepl( "-completed.json$", xfile, ignore.case = TRUE, perl = TRUE) )
-      xaction[["status"]] <- "completed"
-    
-    actions[[ length(actions) + 1 ]] <- xaction
-    
-  }
-  
-
-  return(invisible(actions))
+  return(invisible( cxlib:::.cxlib_batchjob_actions( .self$.attr[["paths"]][".job"] ) ))
 })
 
 
@@ -749,9 +722,7 @@ cxlib_batchjob$methods( "submit" = function( wait = TRUE ) {
     stop( "Could not create job runner" )
   
   
-  
-  
-  
+
   # -- batch execute program
   
   batch_args <- character(0)
@@ -768,16 +739,17 @@ cxlib_batchjob$methods( "submit" = function( wait = TRUE ) {
   
   
   if ( wait ) {
-  
+
     # - wait for the job runner to finish
-    
+
     rc <- try( callr::rcmd( "BATCH",
                             cmdargs = batch_args,
                             wd = cxlib::cxlib_standardpath( base::tempdir() ),
                             echo = FALSE,
                             show = FALSE,
                             spinner = FALSE ),
-               silent = TRUE )
+               silent = FALSE )
+    
 
     if ( inherits( rc, "try-error") )
       stop( "Failed to run job" )
@@ -788,15 +760,7 @@ cxlib_batchjob$methods( "submit" = function( wait = TRUE ) {
   
   
   # - submit the job runner to run in the background  
-  
-  rc <- try( callr::rcmd_bg( "BATCH",
-                             cmdargs = batch_args,
-                             wd = cxlib::cxlib_standardpath( base::tempdir() ) ),
-             silent = TRUE )
-
-  if ( inherits( rc, "try-error") )
-    stop( "Failed to run job" )
-  
+  cxlib::cxlib_rcmd( job_r_pgm, log = job_r_log, wd = .self$.attr[["paths"]]["work.area"], wait = FALSE )
 
 })
 
@@ -1004,7 +968,7 @@ cxlib_batchjob$methods( "archive" = function() {
   
   results_archive <- file.path( .self$.attr[["paths"]][".job"], paste0( "job-", .self$.attr[["id"]], "-results.zip" ), fsep = "/" )
 
-  return(invisible( cxlib:::.cxlib_batchjob_resultsarchive( results_archive, job.path = .self$.attr[["paths"]][".job"], work.path = .self$.attr[["paths"]]["work.area"]) ))
+  return(invisible( cxlib:::.cxlib_batchjob_resultsarchive( .self$actions(), out = results_archive, work.path = .self$.attr[["paths"]]["work.area"]) ))
 })
 
 

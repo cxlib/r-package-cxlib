@@ -575,21 +575,17 @@ testthat::test_that( "batchjob.execdJobInvalidActionFileFormat", {
   base::writeLines( paste( sample( c( base::LETTERS, base::letters, as.character(0:9)), 20), collapse = ""), 
                     con = file.path( test_ctl_path, test_action_file, fsep = "/" ) )
   
-  test_action <- list( "type" = paste( sample( c( base::LETTERS, base::letters, as.character(0:9)), 20), collapse = "") )
-
-  base::writeLines( jsonlite::toJSON( test_action ), 
-                    con = file.path( test_ctl_path, test_action_file, fsep = "/" ) )
-    
   if ( ! file.exists( file.path( test_ctl_path, test_action_file, fsep = "/" ) ) )
     testthat::fail( "Could not stage invalid action file format" )
   
   
   
   # -- test
-  
+
   testthat::expect_error( cxlib:::.cxlib_batchjob_execd( test_ctl_path, work = test_workarea ), 
-                          regexp = paste0( "^Action ", base::toupper(test_action[["type"]]), " not supported$" ) )
+                          regexp = paste0( "^Failed to import action ", test_action_file, "$" ) )
   
+
 })
 
 
@@ -941,3 +937,4 @@ testthat::test_that( "batchjob.execdJobMultipleProgramAction", {
   
   
 })
+
