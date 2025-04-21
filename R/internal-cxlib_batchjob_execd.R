@@ -49,6 +49,8 @@
   if ( missing(x) || is.null(x) || any(is.na(x)) || ! inherits( x, "character") || ! dir.exists(x) )
     stop( "Directory path to actions missing or invalid")
 
+  job_xpath <- cxlib::cxlib_standardpath(x)
+  
   
   if ( is.null(work) || any(is.na(work)) || ! inherits( work, "character") || ! dir.exists(work) )
     stop( "Work area directory path missing or invalid")
@@ -56,10 +58,10 @@
   
   # -- job definition
   
-  if ( ! file.exists( file.path( x, "job.json", fsep = "/" ) ) )
+  if ( ! file.exists( file.path( job_xpath, "job.json", fsep = "/" ) ) )
     stop( "Job definition not available" )
   
-  job_def <- try( jsonlite::fromJSON( file.path( x, "job.json", fsep = "/" ) ), silent = TRUE )
+  job_def <- try( jsonlite::fromJSON( file.path( job_xpath, "job.json", fsep = "/" ) ), silent = TRUE )
   
   if ( inherits( job_def, "try-error" ) )
     stop( "Could not import job definition")
@@ -82,122 +84,116 @@
   
   # - update job.json
   base::writeLines( jsonlite::toJSON( job_def, pretty = TRUE ), 
-                    con = file.path( x, "job.json", fsep = "/" ) )
+                    con = file.path( job_xpath, "job.json", fsep = "/" ) )
   
   
   
   # -- get list of action definitions
 
-  act_json <- list.files( x, pattern = "^\\d+-action-.*.(json|lck)$", full.names = FALSE, recursive = FALSE, include.dirs = FALSE )
+  action_lst <- cxlib:::.cxlib_batchjob_actions( job_xpath )
 
-  if ( any(grepl( "(\\.lck|\\-completed.json)$", act_json, perl = TRUE, ignore.case = TRUE) ) )
-    stop( "Specified job is active or stale" )
+  if ( length(action_lst) > 0 )
+    for ( xaction in action_lst )
+      if ( ! "status" %in% names(xaction) || ( xaction[["status"]] != "planned" ) )
+        stop( "Specified job is active or stale" )
+
   
+  # -- identify files with action definitions
   
-  
+  lst_files <- list.files( job_xpath, pattern = "^\\d+-action-.*.(json|lck)$", full.names = FALSE, recursive = FALSE, include.dirs = FALSE )
+
+  if ( length(action_lst) > 0 )
+    for ( xidx in 1:length(action_lst) ) 
+      action_lst[[xidx]][[".action.file."]] <- file.path( job_xpath, 
+                                                          utils::head( lst_files[ grepl( action_lst[[xidx]][["id"]], lst_files, ignore.case = TRUE ) ], n = 1 ),
+                                                          fsep = "/" )
+
+      
   # -- process actions
+
+  if ( length(action_lst) > 0 )
+    for ( act_def in action_lst ) {
   
-  for ( xaction in act_json ) {
+      # - action definition file
+      act_file <- act_def[[".action.file."]]
+      
   
-    # - import action definition
-    act_file <- file.path( job_def[["paths"]][[".internal"]], xaction, fsep = "/" )
-    
-    act_def <- try( jsonlite::fromJSON( act_file ), silent = TRUE )
-    
-    if ( inherits( act_def, "try-error" ) )
-      stop( "Failed to import action ", xaction )
-    
-    
-    
-    # - supported action
-    
-    if ( ! "type" %in% names(act_def) )
-      stop( "Could not determine job action type" )
-    
-    if ( ! base::toupper(act_def[["type"]]) %in% supported_actions )
-      stop( "Action ", base::toupper(act_def[["type"]]), " not supported" )
-    
-    
-
-    # - note action initiate and complete 
-    
-    act_def[["start"]] <- format( as.POSIXct( base::Sys.time(), tz = "UTC"), format = "%Y%m%dT%H%M%S")
-    act_def[["end"]] <- NA
-    
-    
-    # - move action to ongoing
-    
-    lck_file <- paste0( tools::file_path_sans_ext( act_file ), ".lck" )
-    
-    if ( inherits( try( file.rename( act_file, lck_file ), 
-                        silent = TRUE ), 
-                   "try-error" ) )
-      stop( "Could not update job action status to executing" )
-
-    
-    # - update action 
-    if ( inherits( try( writeLines( jsonlite::toJSON( act_def, pretty = TRUE ), 
-                                    con = lck_file ),
-                        silent = TRUE ), 
-                   "try-error" ) )
-      stop( "Could not update job action" )
-
-
-    
-    
-    # - action type of PROGRAM
+      # - supported action
+      
+      if ( ! "type" %in% names(act_def) )
+        stop( "Could not determine job action type" )
+      
+      if ( ! base::toupper(act_def[["type"]]) %in% supported_actions )
+        stop( "Action ", base::toupper(act_def[["type"]]), " not supported" )
+      
+      
+  
+      # - note action initiate and complete 
+      
+      act_def[["start"]] <- format( as.POSIXct( base::Sys.time(), tz = "UTC"), format = "%Y%m%dT%H%M%S")
+      act_def[["end"]] <- NA
+      
+      
+      # - move action to ongoing
+      
+      lck_file <- paste0( tools::file_path_sans_ext( act_file ), ".lck" )
+      
+  
+      # - update action 
+      if ( inherits( try( writeLines( jsonlite::toJSON( act_def, pretty = TRUE ), 
+                                      con = lck_file ),
+                          silent = TRUE ), 
+                     "try-error" ) )
+        stop( "Could not update job action" )
+  
+  
+      
+      
+      # - action type of PROGRAM
+          
+      if ( base::toupper(act_def[["type"]]) == "PROGRAM" ) {
+      
+        # set up options
+        act_opts <- list( "job.id" = unname(job_def[["id"]]), 
+                          "work.area" = unname(job_def[["paths"]][["work.area"]]) )
         
-    if ( base::toupper(act_def[["type"]]) == "PROGRAM" ) {
-    
-      # set up options
-      act_opts <- list( "job.id" = unname(job_def[["id"]]), 
-                        "work.area" = unname(job_def[["paths"]][["work.area"]]) )
+        
+        # run program
+  
+        act_result <- cxlib:::.cxlib_batchjob_execd_program( act_def, act_opts )
+        
+  
+        
+        # capture results
+        
+        act_def[["log"]][["sha1"]] <- unname(act_result[["log"]][["sha1"]])
+        
+        for ( xitem in c( "start", "end", "files.input", "files.created", "files.updated", "files.deleted") )
+          act_def[ xitem ] <- as.list( act_result[xitem] )
+  
+      }  # end of if-statement for type PROGRAM
+  
+      
+                
+      
+      # - update action with completion details
+      
+      act_def[["end"]] <- format( as.POSIXct( base::Sys.time(), tz = "UTC"), format = "%Y%m%dT%H%M%S")
+      
+      completed_file <- paste0( tools::file_path_sans_ext( lck_file ), "-completed.json" ) 
+      
+      if ( inherits( try( writeLines( jsonlite::toJSON( act_def, pretty = TRUE ), 
+                                      con = completed_file ),
+                          silent = TRUE ), 
+                     "try-error" ) )
+        stop( "Could not update completed job action" )
+  
+      
+      # - reset
+      base::rm( list = c( "act_file", "act_def", "act_result" ) )
       
       
-      # run program
-
-      act_result <- try( cxlib:::.cxlib_batchjob_execd_program( act_def, act_opts ), silent = FALSE )  
-      
-      if ( inherits( act_result, "try-error" ) )
-        stop( "An internal occurred when running program ", act_def[["path"]] )
-      
-      
-      # capture results
-      
-      act_def[["log"]][["sha1"]] <- unname(act_result[["log"]][["sha1"]])
-      
-      for ( xitem in c( "start", "end", "files.input", "files.created", "files.updated", "files.deleted") )
-        act_def[ xitem ] <- as.list( act_result[xitem] )
-
-    }  # end of if-statement for type PROGRAM
-
-    
-              
-    
-    # - update action with completion details
-    
-    act_def[["end"]] <- format( as.POSIXct( base::Sys.time(), tz = "UTC"), format = "%Y%m%dT%H%M%S")
-    
-    
-    if ( inherits( try( writeLines( jsonlite::toJSON( act_def, pretty = TRUE ), 
-                                    con = lck_file ),
-                        silent = TRUE ), 
-                   "try-error" ) )
-      stop( "Could not update completed job action" )
-    
-    
-    # - move action to completed
-    if ( inherits( try( file.rename( lck_file, 
-                                     paste0( tools::file_path_sans_ext( lck_file ), "-completed.json") ), 
-                        silent = TRUE ), 
-                   "try-error" ) )
-      stop( "Could not update job action status to completed" )
-    
-    
-    # - reset
-    base::rm( list = c( "act_file", "act_def", "act_result" ) )
-    
-  }  # end of for-statement on act_json
+    }  # end of for-statement on action_lst
 
   
 
@@ -213,13 +209,16 @@
  
   
   # -- archive results
-  if ( archive.results ) {
+  if ( (length(action_lst) > 0) && archive.results ) {
     
     results_archive <- file.path( job_def[["paths"]][[".internal"]], paste0( "job-", job_def[["id"]], "-results.zip" ), fsep = "/" )
     
-    cxlib:::.cxlib_batchjob_resultsarchive( results_archive, job.path = job_def[["paths"]][[".internal"]], work.path = job_def[["paths"]][["work.area"]] )
+    cxlib:::.cxlib_batchjob_resultsarchive( cxlib:::.cxlib_batchjob_actions(job_def[["paths"]][[".internal"]]),
+                                            out = results_archive, 
+                                            work.path = job_def[["paths"]][["work.area"]] )
     
     base::unlink( job_def[["paths"]][["work.area"]], recursive = TRUE, force = TRUE )
+    
   }
   
   

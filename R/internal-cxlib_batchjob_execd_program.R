@@ -179,7 +179,7 @@
                           echo = FALSE, 
                           show = FALSE, 
                           spinner = FALSE ),
-             silent = TRUE )
+             silent = FALSE )
   
   
   # - end time
@@ -391,9 +391,6 @@
         if ( unname(exec_results[[xcat]][[xentry]][["path"]]) == unname(exec_results[["log"]][["path"]]) )
           exec_results[[xcat]][[xentry]][["sha1"]] <- exec_results[["log"]][["sha1"]]
     
-  
-  
-  
-  
+
   return(invisible(exec_results))
 }

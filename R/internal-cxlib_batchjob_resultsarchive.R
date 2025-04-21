@@ -1,24 +1,21 @@
 #' Internal function to generate a results archive from completed actions
 #' 
-#' @param x Result archive file
-#' @param job.path Path to job actions
+#' @param x Actions to arhive
+#' @param out Result archive file
 #' @param work.path Path to job work area
 #' 
 #' @return Path to archive file
 #' 
 #' 
 
-.cxlib_batchjob_resultsarchive <- function( x, job.path = NULL, work.path = NULL ) {
+.cxlib_batchjob_resultsarchive <- function( x, out = NULL,  work.path = NULL ) {
   
+  if ( missing(x) || is.null(x) || ! inherits(x, "list") || ( length(x) == 0 ) )
+    stop( "Actions missing or invalid" )
 
-  if ( missing(x) || is.null(x) || (length(x) != 1) || ! inherits(x, "character") ) 
-    stop( "Results archive file missing")
-    
+  if ( is.null(out) || (length(out) != 1) || ! inherits(out, "character") ) 
+    stop( "Results output archive file missing")
 
-  if ( is.null(job.path) || all(is.na(job.path)) || (length(job.path) != 1) || ! dir.exists(job.path) )
-    stop( "Job path missing or invalid")
-  
-  job_path <- cxlib::cxlib_standardpath( job.path )
   
     
   if ( is.null(work.path) || all(is.na(work.path)) || (length(work.path) != 1) || ! dir.exists(work.path) )
@@ -32,32 +29,9 @@
   
   # -- get actions
   
-  action_lst <- list()
-  
-  
-  lst_files <- base::sort( list.files( job_path, 
-                                       pattern = "^\\d+-action-.*.(json|lck)$", 
-                                       recursive = FALSE, include.dirs = FALSE, full.names = TRUE ) )
-  
-  for ( xfile in lst_files ) {
-    
-    # xaction <- jsonlite::fromJSON( xfile, flatten = TRUE )
-    xaction <- jsonlite::fromJSON( xfile, simplifyDataFrame = FALSE )
-    
-    xaction[["status"]] <- "planned"
-    
-    if ( tools::file_ext( xfile) == "lck" )
-      xaction[["status"]] <- "executing"
-    
-    if ( grepl( "-completed.json$", xfile, ignore.case = TRUE, perl = TRUE) )
-      xaction[["status"]] <- "completed"
-    
-    action_lst[[ length(action_lst) + 1 ]] <- xaction
-    
-  }
+  action_lst <- as.list(x)
   
 
-  
   
   # -- integrity checks and actions completed 
   
@@ -184,7 +158,7 @@
   
   # -- create archive
   
-  zip_archive <- zip::zip( x, base::unique( c(logs_to_write, files_to_write)), root = work_area )
+  zip_archive <- zip::zip( out, base::unique( c(logs_to_write, files_to_write)), root = work_area )
   
   return(invisible( zip_archive ))  
   

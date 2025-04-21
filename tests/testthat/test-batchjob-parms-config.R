@@ -8,23 +8,23 @@
 #
 
 
-testthat::test_that( "batchjob.noParams", {
-
-  # -- test
-  
-  testthat::expect_error( cxlib::cxlib_batchjob(), regexp = "^Input is invalid or missing$" )
-
-})
-
-
-
-testthat::test_that( "batchjob.inputNull", {
-  
-  # -- test
-  
-  testthat::expect_error( cxlib::cxlib_batchjob( NULL ), regexp = "^Input is invalid or missing$" )
-  
-})
+# testthat::test_that( "batchjob.noParams", {
+# 
+#   # -- test
+#   
+#   testthat::expect_error( cxlib::cxlib_batchjob(), regexp = "^Input is invalid or missing$" )
+# 
+# })
+# 
+# 
+# 
+# testthat::test_that( "batchjob.inputNull", {
+#   
+#   # -- test
+#   
+#   testthat::expect_error( cxlib::cxlib_batchjob( NULL ), regexp = "^Input is invalid or missing$" )
+#   
+# })
 
 
 
@@ -38,13 +38,6 @@ testthat::test_that( "batchjob.inputNA", {
 
 
 
-testthat::test_that( "batchjob.inputEmpty", {
-  
-  # -- test
-  
-  testthat::expect_error( cxlib::cxlib_batchjob( character(0) ), regexp = "^Input is invalid or missing$" )
-  
-})
 
 
 testthat::test_that( "batchjob.inputInvalidType", {

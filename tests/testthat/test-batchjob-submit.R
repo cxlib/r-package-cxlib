@@ -115,13 +115,12 @@ testthat::test_that( "batchjob.submitSingleProgram", {
   # - stage job  
   test_job <-  cxlib::cxlib_batchjob( list( "id" = test_id, "programs" = test_program_refs ) )
   
-  
+ 
   # -- test
 
   test_job$submit( wait = TRUE )
   
 
-  
   # -- expected
   
   # - job id
@@ -421,7 +420,7 @@ testthat::test_that( "batchjob.submitSingleProgramWaitDisabled", {
   
   test_program_refs <- base::substring( test_program, base::nchar(test_wd) + 2 )
   
-  
+
   
   # - test job id
   test_id <- cxlib:::.cxlib_referenceid( type = "job" )
@@ -467,9 +466,8 @@ testthat::test_that( "batchjob.submitSingleProgramWaitDisabled", {
   if ( ! test_completed )
     testthat::fail( "Unexpected run time duration exceeded 20 seconds")
   
-  
-    
-  
+
+
   # -- expected
   
   # - job id
@@ -479,7 +477,7 @@ testthat::test_that( "batchjob.submitSingleProgramWaitDisabled", {
   # - logs
   expected_logs <- paste0( tools::file_path_sans_ext( test_program_refs ), ".Rout" ) 
 
-  
+
   # - expected archive
   expected_archive <- file.path( test_jobpath, test_id, ".job", paste0( "job-", expected_id, "-results.zip"), fsep = "/" )
 
