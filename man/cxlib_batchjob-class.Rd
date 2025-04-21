@@ -113,7 +113,7 @@ job actions and status.
 
 \item{\code{details(wait = TRUE)}}{Job details}
 
-\item{\code{initialize(x)}}{Create new batch job}
+\item{\code{initialize(x = NULL)}}{Create new batch job}
 
 \item{\code{save()}}{Save job results}
 

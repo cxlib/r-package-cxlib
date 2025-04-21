@@ -4,12 +4,12 @@
 \alias{.cxlib_batchjob_resultsarchive}
 \title{Internal function to generate a results archive from completed actions}
 \usage{
-.cxlib_batchjob_resultsarchive(x, job.path = NULL, work.path = NULL)
+.cxlib_batchjob_resultsarchive(x, out = NULL, work.path = NULL)
 }
 \arguments{
-\item{x}{Result archive file}
+\item{x}{Actions to arhive}
 
-\item{job.path}{Path to job actions}
+\item{out}{Result archive file}
 
 \item{work.path}{Path to job work area}
 }
