@@ -4,7 +4,7 @@ Version: 0.0.0.9000
 Authors@R: 
     person("Magnus", "Mengelbier", , "magnus.mengelbier@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-8673-7625"))
-Imports: base, tools, methods, digest (>= 0.6.37), callr (>= 3.7.6), uuid (>= 1.2-0), jsonlite (>= 1.8.9), zip (>= 2.3.1)
+Imports: base, tools, methods, digest (>= 0.6.37), callr (>= 3.7.6), uuid (>= 1.2-0), jsonlite (>= 1.8.9), zip (>= 2.3.1), httr2 (>= 1.0.7), askpass (>= 1.2.1)
 Suggests: testthat (>= 3.0.0)
 Description: Collection of R utilities, functions and object for library management, setup, configuration and interacting with data and analysis in Life Science GxP and regulated environments.
 License: Apache License (== 2.0)
