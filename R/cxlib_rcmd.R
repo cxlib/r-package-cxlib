@@ -60,8 +60,20 @@ cxlib_rcmd <- function( x, log = NULL, wd = base::getwd(), libpaths = .libPaths(
   
   # -- OS command 
 
+  os_cmd <- character(0)
+  
+  
+  # - environ
+  cfg <- cxlib::cxlib_config()
+  
+  if ( ! is.na(cfg$option( "ENVIRON.DEFAULT", unset = NA ) ) )
+    os_cmd <- append( os_cmd, 
+                      paste0("export R_ENVIRON_USER=",cfg$option( "ENVIRON.DEFAULT", unset = "" ) ) )
+
+  
   # - change to working directory
   os_cmd <- paste( "cd", wd )
+
   
   # - add R call
   os_cmd <- append( os_cmd, paste( r_cmd, collapse = " ") )
@@ -71,14 +83,8 @@ cxlib_rcmd <- function( x, log = NULL, wd = base::getwd(), libpaths = .libPaths(
   os_cmd_str <- paste( os_cmd, collapse = ";")
   
   
-  rc <- system( os_cmd_str, wait = FALSE, intern = FALSE, ignore.stdout = TRUE, ignore.stderr = TRUE )
+  system( os_cmd_str, wait = FALSE, intern = FALSE, ignore.stdout = TRUE, ignore.stderr = TRUE )
   
-    
-  # if ( ! wait )
-  #   os_cmd_str <- paste( "nohup", os_cmd_str, "&", sep = " " )
-  # rc <- system( paste( "(", os_cmd_str, " &)"), intern = TRUE )
   
-
-  print(rc)
-    
+  return(invisible(NULL))
 }
