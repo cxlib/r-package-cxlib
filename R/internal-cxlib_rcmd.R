@@ -1,18 +1,22 @@
-#' Utility function to run an R program 
+#' Internal utility function to run an R program as a background process
 #' 
 #' @param x Program path
 #' @param log Alternative log path
 #' @param wd Working directory
-#' @param libpaths Vector of library paths
-#' @param environ Custom environmental file
-#' @param wait Wait for program to finish executing
+#' 
+#' @return Invisible NULL
+#' 
+#' @description
+#' A crude function to execute an R program as a standalone process 
+#' 
+#' The .Renviron configuration can be coerced using the cxlib property
+#' `RENVIRON.DEFAULT` to define standard R compute environment configuration.
 #' 
 #' 
-#' 
-#' @export 
+#' @keywords internal
 
 
-cxlib_rcmd <- function( x, log = NULL, wd = base::getwd(), libpaths = .libPaths(), environ = NULL, wait = FALSE ) {
+.cxlib_rcmd <- function( x, log = NULL, wd = base::getwd() ) {
   
   
   if ( missing(x) || is.null(x) || any(is.na(x)) || ! inherits( x, "character" ) || (length(x) != 1) )
@@ -72,7 +76,7 @@ cxlib_rcmd <- function( x, log = NULL, wd = base::getwd(), libpaths = .libPaths(
 
   
   # - change to working directory
-  os_cmd <- paste( "cd", wd )
+  os_cmd <- append( os_cmd, paste( "cd", wd ) )
 
   
   # - add R call

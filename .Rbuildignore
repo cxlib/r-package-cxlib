@@ -3,3 +3,6 @@
 ^README
 ^.gitignore$
 ^LICENSE$
+^.github
+^.scripts
+^data

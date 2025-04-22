@@ -760,7 +760,7 @@ cxlib_batchjob$methods( "submit" = function( wait = TRUE ) {
   
   
   # - submit the job runner to run in the background  
-  cxlib::cxlib_rcmd( job_r_pgm, log = job_r_log, wd = .self$.attr[["paths"]]["work.area"], wait = FALSE )
+  cxlib:::.cxlib_rcmd( job_r_pgm, log = job_r_log, wd = .self$.attr[["paths"]]["work.area"] )
 
 })
 
