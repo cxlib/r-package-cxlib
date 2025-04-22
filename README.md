@@ -17,7 +17,7 @@ Download and install the latest release of cxlib from https://github.com/cxlib/r
 You can also install the latest release directly using `install.packages()`.   
 
 ```
-install.packages( "https://github.com/cxlib/r-package-cxlib/releases/download/v0.4.0/cxlib_0.4.0.tar.gz", type = "source", INSTALL_opts = "--install-tests" )
+install.packages( "https://github.com/cxlib/r-package-cxlib/releases/download/v0.5.1/cxlib_0.5.1.tar.gz", type = "source", INSTALL_opts = "--install-tests" )
 ```
 
 To install prior releases, replace the version number references in the URL.
