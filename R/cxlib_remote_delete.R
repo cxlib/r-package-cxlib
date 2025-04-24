@@ -11,8 +11,12 @@
 cxlib_remote_delete <- function( x, queue = NULL ) {
   
   
-  if ( is.null(x) || any(is.na(x)) || ! inherits( x, "character" ) || (length(x) == 0) ) 
+  if ( missing(x) || is.null(x) || any(is.na(x)) || ! inherits( x, "character" ) || (length(x) == 0) ) 
     stop( "Job reference missing or invalid" )
+  
+  
+  # -- library configuration
+  lib_cfg <- cxlib::cxlib_config()
   
   
   # -- determine URL
@@ -33,6 +37,8 @@ cxlib_remote_delete <- function( x, queue = NULL ) {
   rslt_del <- httr2::request( px_url ) |>
     httr2::req_url_path( paste0( "/api/job/", x ) ) |>
     httr2::req_method("DELETE") |>
+    httr2::req_options( ssl_verifypeer = lib_cfg$option("REMOTE.VERIFYSSLCERT", unset = TRUE), 
+                        ssl_verifyhost = lib_cfg$option("REMOTE.VERIFYSSLCERT", unset = TRUE) ) |>    
     httr2::req_auth_bearer_token( cxlib:::.cxlib_remote_accesstoken() ) |>
     httr2::req_perform()
   
@@ -49,9 +55,9 @@ cxlib_remote_delete <- function( x, queue = NULL ) {
   
   
   cxlib::cxlib_remote_jobinfo(x)
-
-  cat( c( " ", "Job successfully deleted", " " ), sep = "\n" )   
   
+  cat( c( " ", "Job successfully deleted" ), sep = "\n" )   
+
   
   return(invisible(x)) 
 }
