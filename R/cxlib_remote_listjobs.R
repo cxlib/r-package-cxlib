@@ -18,13 +18,21 @@ cxlib_remote_listjobs <- function( queue = NULL) {
   if ( is.null(queue) || any(is.na(queue)) || ! inherits( queue, "character" ) || (length(queue) != 1) )
     stop( "Process queue missing or invalid" )
   
-  # ---
-  px_url <- paste0( queue, "/api/jobs" )
+  
+  # -- library configuration
+  lib_cfg <- cxlib::cxlib_config()
+  
+
+  # --- process URL
+  px_url <- queue
   
   
   # -- retrieve list of jobs
   rslt <- httr2::request( px_url ) |>
+    httr2::req_url_path( "/api/jobs" ) |>
     httr2::req_method("GET") |>
+    httr2::req_options( ssl_verifypeer = lib_cfg$option("REMOTE.VERIFYSSLCERT", unset = TRUE), 
+                        ssl_verifyhost = lib_cfg$option("REMOTE.VERIFYSSLCERT", unset = TRUE) ) |>
     httr2::req_auth_bearer_token( cxlib:::.cxlib_remote_accesstoken() ) |>
     httr2::req_perform()
     
