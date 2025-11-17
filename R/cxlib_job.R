@@ -6,10 +6,11 @@
 #' @method initialize initialize
 #' @method actions actions
 #' @method add add
-#' @method remove remove
+#' @method drop drop
 #' @method show show
 #' @method toJSON toJSON
 #' @method fromJSON fromJSON
+#' @method hash hash
 #' 
 #' 
 #' @description
@@ -42,6 +43,8 @@
 #' where `x` represents the position of the action or the action identifier. If
 #' position `x` is larger than the number of actions, the last action is 
 #' dropped.
+#' 
+#' The `hash` method derives a unique SHA-1 digest based on the job definition.
 #' 
 #' The methods `.toJSON` and `.fromJSON` are internal methods to convert job 
 #' definition to and from JSON format, respectively.
@@ -79,82 +82,9 @@ cxlib_job$methods( "initialize" = function() {
   cfg <- cxlib::cxlib_config()
   
   # - debug options
-  .self$.attr[["mode.silent"]] <- ! cfg$option( "mode.debug", unset = FALSE )
+  .self$.attr[["mode.silent"]] <- ! base::tolower(cfg$option( "mode.debug", unset = "disable" )) %in% c( "enable", "enabled") 
   
-  
-  # # - default options
-  # for ( xitem in c( "logs", "log.fileext" ) )
-  #   if ( ! is.na( cfg$option( paste0( "CXLIB.", base::toupper(xitem)), unset = NA ) ) )
-  #     .self$.attr[["options"]][[ xitem ]] <- cfg$option( paste0( "CXLIB.", base::toupper(xitem)), unset = NA )
-  # 
-  # 
-  # 
-  # # - root path 
-  # #   note: root path is the parent directory for the job control directories
-  # 
-  # if ( ! is.na(cfg$option( "CXLIB.PATH", unset = NA )) &&
-  #      ( (length(cfg$option( "CXLIB.PATH", unset = NA )) != 1 ) ||
-  #        ! dir.exists( cfg$option( "CXLIB.PATH", unset = NA ) ) ) )
-  #   stop( "The directory defined by CXLIB.PATH configuration property is invalid or does not exist" )
-  # 
-  # 
-  # root_ctlpath <- cxlib::cxlib_standardpath( cfg$option( "CXLIB.PATH", unset = file.path( base::tempdir(), ".cxlib", fsep = "/") ) )
-  # 
-  # 
-  # 
-  # 
-  # # -- manage specified identifier  
-  # 
-  # # - specified
-  # 
-  # if ( ! missing(x) ) {
-  #   
-  #   if ( is.null(x) || ! inherits( x, "character" ) || (length(x) != 1) || (base::trimws(x) == "") ||
-  #        ! uuid::UUIDvalidate(base::trimws(x)) )
-  #     stop( "The specified ID is in an invalid format" )
-  # 
-  #   .self$.attr[["id"]] <- base::trimws(x)
-  #   
-  # 
-  #   if ( ! create && ! dir.exists( file.path( root_ctlpath, .self$.attr[["id"]], fsep =  ) ) )
-  #     stop( "The job directory does not exist" )
-  #   
-  # }
-  #   
-  # 
-  #   
-  # # -- job directory areas and standard files
-  #   
-  # # - job control directory
-  # .self$.attr[["paths"]]["job.control"] <- file.path( root_ctlpath, .self$.attr[["id"]], fsep = "/" )
-  # 
-  # 
-  # # - job work area
-  # #   note: the pattern .../.job./<job id>/.job./.work/... is used to identify system processes associated with a specific job
-  # .self$.attr[["paths"]]["work.area"] <- file.path( cxlib::cxlib_standardpath( cfg$option( "CXLIB.WORK", 
-  #                                                                                          unset = file.path( base::tempdir(), ".cxlib-wrk", fsep = "/") ) ), 
-  #                                                   ".job.", .self$.attr[["id"]], ".job.", 
-  #                                                   ".work", 
-  #                                                   fsep = "/" )
-  # 
-  # # -- standard job control files
-  # 
-  # # - standard job definition file
-  # .self$.attr[["paths"]]["job.definition"] <- file.path( .self$.attr[["paths"]]["job.control"], "job.json", fsep = "/" )
-  # 
-  # # - standard job definition lock file
-  # #   note: if file exists, job is locked for editing
-  # .self$.attr[["paths"]]["signal.editlock"] <- file.path( .self$.attr[["paths"]]["job.control"], "job.lck", fsep = "/" )
-  # 
-  # # - standard job processing - stop job
-  # #   note: if file exists, job is/should stop processing with return of results
-  # .self$.attr[["paths"]]["signal.stop"] <- file.path( .self$.attr[["paths"]]["job.control"], "stop.lck", fsep = "/" )
-  # 
-  # # - standard job processing - terminate job
-  # #   note: if file exists, job is/should stop processing with no return of results
-  # .self$.attr[["paths"]]["signal.terminate"] <- file.path( .self$.attr[["paths"]]["job.control"], "terminate.lck", fsep = "/" )
-  
-  
+
 })
 
 
@@ -164,9 +94,10 @@ cxlib_job$methods( "initialize" = function() {
 cxlib_job$methods( "actions" = function() {
   "List of actions and tasks defined in the job definition"
 
-
   return(invisible( base::unname(.self$.attr[["actions"]]) ))  
 })
+
+
 
 
 cxlib_job$methods( "add" = function( type, ..., after = 1000000L ) {
@@ -211,16 +142,17 @@ cxlib_job$methods( "add" = function( type, ..., after = 1000000L ) {
   
   # -- insert action def
 
-  # - position as next action
-  pos <- length(.self$.attr[["actions"]]) + 1
-
+  # - initialize position as next action
+  after_pos <- length(.self$.attr[["actions"]])
+  
+  
   # - first position ... after = 0
   if ( inherits( after, c( "numeric", "integer" ) ) && ( after == 0 ) )
-    pos <- 1
+    after_pos <- 0
 
   # - position as in numeric  
   if ( inherits( after, c( "numeric", "integer" ) ) && ( as.integer(after) < length(.self$.attr[["actions"]]) ) )
-    pos <- as.integer(after) + 1
+    after_pos <- as.integer(after)
   
   
   # - position as action reference
@@ -229,14 +161,12 @@ cxlib_job$methods( "add" = function( type, ..., after = 1000000L ) {
     if ( (length(after) != 1) || ! base::tolower(base::trimws(after)) %in% base::names(.self$.attr[["actions"]]) )
       stop( "The action reference specifed as insert position is invalid" )
     
-    pos <- match( base::tolower(base::trimws(after)), base::names(.self$.attr[["actions"]]) ) + 1
+    after_pos <- match( base::tolower(base::trimws(after)), base::names(.self$.attr[["actions"]]) )
   } 
   
-  # - position out of range
-  if ( length(.self$.attr[["actions"]]) + 1 < pos )
-    pos <- length(.self$.attr[["actions"]]) + 1
   
-  
+
+
   # - insert first action
   if ( length(.self$.attr[["actions"]]) == 0 ) {
     
@@ -245,21 +175,25 @@ cxlib_job$methods( "add" = function( type, ..., after = 1000000L ) {
   } else {
     
     #   note: one or more action records exist
+    #   note: sequence of insert at position and last record is key to manage if-condition
+
 
     # - insert as first action
-    if ( pos == 1 ) 
+    if ( after_pos == 0 ) 
       .self$.attr[["actions"]] <- do.call( c, list( list(action_def), .self$.attr[["actions"]] ) )
-    
-    # - insert as last record
-    if ( length(.self$.attr[["actions"]]) < pos ) 
-      .self$.attr[["actions"]][[pos]] <- action_def
+
     
     # - insert at position 
-    if ( (pos > 1) && (pos < length(.self$.attr[["actions"]])) )
-      .self$.attr[["actions"]] <- do.call( c, list( .self$.attr[["actions"]][ 1:(pos-1) ], 
+    if ( (after_pos > 0) && (after_pos < length(.self$.attr[["actions"]])) ) 
+      .self$.attr[["actions"]] <- do.call( c, list( .self$.attr[["actions"]][ 1:after_pos ], 
                                                     list(action_def),
-                                                    .self$.attr[["actions"]][ pos:length(.self$.attr[["actions"]]) ] ) )
+                                                    .self$.attr[["actions"]][ (after_pos + 1):length(.self$.attr[["actions"]]) ] ) )
+
     
+    # - insert as last record
+    if ( length(.self$.attr[["actions"]]) <= after_pos ) 
+      .self$.attr[["actions"]][[ length(.self$.attr[["actions"]]) + 1 ]] <- action_def
+
   }
   
 
@@ -280,14 +214,25 @@ cxlib_job$methods( "drop" = function( x ) {
     stop( "The specified position or reference for the action to drop is missing or invalid" )
   
   
+  # -- futility
+  if ( length(.self$.attr[["actions"]]) == 0 )
+    return(invisible( .self$actions() ))
+  
+  
   # -- determine position 
   pos <- NA
 
+  
   # - numeric position
   #   note: if x is larger than the list of actions, last action is dropped
-  if ( inherits( x, c( "numeric", "integer" ) ) ) 
-    pos <- min( as.integer(x), length(.self$.attr[["actions"]]) )
+  if ( inherits( x, c( "numeric", "integer" ) ) ) {
+
+    if ( as.integer(x) < 1 )
+      stop( "Position index invalid" )
     
+    pos <- min( as.integer(x), length(.self$.attr[["actions"]]) )     
+  } 
+
 
 
   # - position by reference  
@@ -306,21 +251,26 @@ cxlib_job$methods( "drop" = function( x ) {
   
   
   # -- drop actions
+  #    note: the drop sequence is important so that dropping a record does not make the next
+  #          condition true
   
   # - drop first action
   if ( pos == 1 )
     .self$.attr[["actions"]] <- .self$.attr[["actions"]][ 2:length(.self$.attr[["actions"]]) ]
+
   
   # - drop last action
   if ( pos == length(.self$.attr[["actions"]]) )
     .self$.attr[["actions"]] <- .self$.attr[["actions"]][ 1:( length(.self$.attr[["actions"]]) - 1 ) ]
   
+    
   # - drop middle action
   if ( (pos > 1) && (pos < length(.self$.attr[["actions"]])) )
     .self$.attr[["actions"]] <- do.call( c, list( .self$.attr[["actions"]][ 1:(pos-1) ], 
                                                   .self$.attr[["actions"]][ (pos+1):length(.self$.attr[["actions"]]) ] ) )
-  
-  
+
+
+    
   # - re-apply action names
   base::names(.self$.attr[["actions"]]) <- lapply( .self$.attr[["actions"]], function(x) { x[["id"]] } )
   
@@ -381,9 +331,29 @@ cxlib_job$methods( "fromJSON" = function( x ) {
 
 
 
+cxlib_job$methods( "hash" = function() {
+  "Derive hash value for job"
+  
+  # -- unpack internal attributes
+  lst <- base::unlist( .self$.attr, use.names = TRUE )
+  base::names(lst) <- base::tolower(base::names(lst))
+  
+  
+  # -- generate one string per entry in format <key>=<value>
+  lst_kv <- base::unlist( lapply( base::names(lst), function(x) {
+    paste0( x, "=", lst[[x]] )
+  }), use.names = FALSE )
+  
+
+  return(digest::digest( base::sort(lst_kv), algo = "sha1", file = FALSE ))  
+})
+  
+
+
+
 cxlib_job$methods( "show" = function() {
   "Print job definition"
-  
+
   
   # -- header
   
@@ -434,6 +404,10 @@ cxlib_job$methods( "show" = function() {
       
       job_info <- append( job_info, act_info)
     }
+  
+  
+  # -- add hash
+  job_info <- append( job_info, c( "", "", paste( rep_len("-", length.out = 60 ), collapse = ""), paste0( "(hash: ", .self$hash(), ")" ) ) )
   
   
   # -- display job
