@@ -1,4 +1,4 @@
-#' (Experimental) Utility function to read a saved job definition from a file
+#' Utility function to read a saved job definition from a file
 #' 
 #' @param path File path to saved job
 #' 
@@ -25,14 +25,14 @@
 
 cxlib_readjob <- function( path ) {
   
-  if ( ! inherits( path, "character") || (length(path) != 1) || (base::trimws(path) == "") || 
+  if ( missing(path) || ! inherits( path, "character") || (length(path) != 1) || (base::trimws(path) == "") || 
        ! file.exists(path) )
-    stop( "The specified file is missing, invalud or does not exist" )
+    stop( "The specified file is missing, invalid or does not exist" )
   
   
   job_json <- try( base::readLines( path, warn = FALSE ), silent = FALSE )
   
-  if ( inherits( lst_job, "try-error") )
+  if ( inherits( job_json, "try-error") )
     stop( "An error occurred when reading from file path" )
 
   

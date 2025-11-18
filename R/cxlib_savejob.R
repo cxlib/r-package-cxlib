@@ -1,4 +1,4 @@
-#' (Experimental) Utility function to save a job definition to a file
+#' Utility function to save a job definition to a file
 #' 
 #' @param x A job \link[cxlib]{cxlib_job}
 #' @param path File path to save job
@@ -29,21 +29,21 @@ cxlib_savejob <- function( x, path ) {
   
   
   if ( ! inherits( x, "cxlib_job" ) )
-    stop( "The specified job is invalid type" )
+    stop( "The specified job is an invalid type" )
   
   
   if ( ! inherits( path, "character") || (length(path) != 1) || (base::trimws(path) == "") )
-    stop( "The path is missing or invalid" )
+    stop( "The file path is missing or invalid" )
   
   
   # -- standardize path
   xpath <- cxlib::cxlib_standardpath( path )
-  
-  if ( grepl( "/", xpath ) && ! base::dir.exists(base::dirname(xpath)) )
-    stop( "The parent directory for path does not exist" )
-  
+
   if ( base::dir.exists(xpath) )
-    stop( "The path is a directory" )
+    stop( "The file path is a directory" )
+
+  if ( grepl( "/", xpath ) && ! base::dir.exists(base::dirname(xpath)) )
+    stop( "The parent directory for file path does not exist" )
   
   
   job_json <- try( x$toJSON(), silent = FALSE )
