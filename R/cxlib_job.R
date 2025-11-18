@@ -137,7 +137,7 @@ cxlib_job$methods( "add" = function( type, ..., after = 1000000L ) {
   
 
   # - add attributes to action def
-  action_def[["attributes"]] <- attr_lst
+  action_def[["attributes"]] <- as.list(attr_lst)
   
   
   # -- insert action def
@@ -165,7 +165,6 @@ cxlib_job$methods( "add" = function( type, ..., after = 1000000L ) {
   } 
   
   
-
 
   # - insert first action
   if ( length(.self$.attr[["actions"]]) == 0 ) {
@@ -292,8 +291,26 @@ cxlib_job$methods( "toJSON" = function() {
   
   
   # -- tweak format
-  lst[["job"]][["actions"]] <- base::unname(lst[["job"]][["actions"]])
 
+  # - attributes
+  #   note: moved from a named list of attribute values to list of attribute elements name and value
+  for ( xaction in base::names(lst[["job"]][["actions"]]) ) {
+    
+    lst_attrs <- lst[["job"]][["actions"]][[xaction]][["attributes"]]
+    
+    mtx_attrs <- lapply( base::names(lst_attrs), function(x) {
+      list( "name" = x, 
+            "value" = lst_attrs[[x]] )
+    })
+    
+    lst[["job"]][["actions"]][[xaction]][["attributes"]] <- mtx_attrs
+    
+  }
+  
+
+  # - action references
+  lst[["job"]][["actions"]] <- base::unname(lst[["job"]][["actions"]])
+  
   
   # -- convert to JSON
   
@@ -311,10 +328,18 @@ cxlib_job$methods( "toJSON" = function() {
 cxlib_job$methods( "fromJSON" = function( x ) {
   "Import job definition in JSON format"
   
-  lst <- try( jsonlite::fromJSON(x), silent = .self$.attr[["mode.silent"]] )
+  lst <- try( jsonlite::fromJSON( x, simplifyVector = FALSE ), silent = .self$.attr[["mode.silent"]] )
   
   if ( inherits( lst, "try-error" ) )
     stop( "Could not import job from JSON format")
+  
+  
+  if ( ! "schema" %in% base::names(lst) || ! "cx.job.definition" %in% base::tolower(as.character(lst[["schema"]])) )
+    stop( "Missing or invalid schema reference")
+
+  
+  if ( ! "version" %in% base::names(lst) || ! base::tolower(as.character(lst[["version"]])) %in% c( "0.1") )
+    stop( "Schema version missing or not supported" )
   
   
   if ( ! "job" %in% base::names(lst) ||
@@ -322,8 +347,27 @@ cxlib_job$methods( "fromJSON" = function( x ) {
     stop( "One or more required elements missing in job definition" )
   
   
+  # -- tweak import
+  
+  lst_def <- lst[["job"]]
+  
+  # - restore actions as named elements
+  base::names(lst_def[["actions"]]) <- base::unlist(lapply( lst_def[["actions"]], function(x) { x[["id"]] } ))
+
+
+  for ( xaction in base::names(lst_def[["actions"]]) ) {
+    
+    act_attrs <- list()
+    
+    for ( xattr in lst_def[["actions"]][[xaction]][["attributes"]] ) 
+      act_attrs[[ xattr[["name"]] ]] <- xattr[["value"]]
+
+    lst_def[["actions"]][[xaction]][["attributes"]] <- act_attrs
+  }
+
+
   for ( xitem in c( "id", "actions") )
-    .self$.attr[[xitem]] <- lst[["job"]][[xitem]]
+    .self$.attr[[xitem]] <- lst_def[[xitem]]
   
   
   return(invisible(TRUE))
