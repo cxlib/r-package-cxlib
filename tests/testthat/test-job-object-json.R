@@ -16,6 +16,8 @@ testthat::test_that( "job.toJson", {
   #' @cx.tests Job definition exported to JSON
 
   
+  # -- stage
+  
   # - test job
   test_obj <- cxlib::cxlib_job()
   
@@ -120,6 +122,9 @@ testthat::test_that( "job.fromJson", {
   #' @cx.tests Job definition imported from JSON
   
   
+  # -- stage
+  
+
   # - test job
   test_job <- cxlib::cxlib_job()
   
@@ -238,6 +243,9 @@ testthat::test_that( "job.fromJsonMissingSchema", {
   #' @cx.tests Job definition imported from JSON when schema reference is missing results in error
   
   
+  # -- stage
+  
+  
   # - test job
   test_job <- cxlib::cxlib_job()
   
@@ -330,6 +338,9 @@ testthat::test_that( "job.fromJsonMissingSchema", {
 testthat::test_that( "job.fromJsonInvalidSchema", {
   
   #' @cx.tests Job definition imported from JSON when schema reference is invalid results in error
+  
+  
+  # -- stage
   
   
   # - test job
@@ -425,6 +436,9 @@ testthat::test_that( "job.fromJsonMissingSchemaVersion", {
   #' @cx.tests Job definition imported from JSON when schema version reference is missing results in error
   
   
+  # -- stage
+  
+  
   # - test job
   test_job <- cxlib::cxlib_job()
   
@@ -515,6 +529,9 @@ testthat::test_that( "job.fromJsonMissingSchemaVersion", {
 testthat::test_that( "job.fromJsonInvalidSchemaVersion", {
   
   #' @cx.tests Job definition imported from JSON when schema version reference is invalid results in error
+  
+  
+  # -- stage
   
   
   # - test job
