@@ -79,7 +79,7 @@ cxlib_job$methods( "initialize" = function() {
   
   # -- configuration options
   
-  cfg <- cxlib::cxlib_config()
+  cfg <- cxapp::cxapp_config()
   
   # - debug options
   .self$.attr[["mode.silent"]] <- ! base::tolower(cfg$option( "mode.debug", unset = "disable" )) %in% c( "enable", "enabled") 
