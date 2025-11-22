@@ -12,7 +12,7 @@
 
 testthat::test_that( "readjob.pathMissing", {
   
-  #' @cx.tests Reead job to file results in error when file path is not specified
+  #' @cx.tests Read job to file results in error when file path is not specified
 
   
   # -- test
@@ -23,7 +23,7 @@ testthat::test_that( "readjob.pathMissing", {
 
 testthat::test_that( "readjob.pathNull", {
   
-  #' @cx.tests Reead job to file results in error when file path is NULL
+  #' @cx.tests Read job to file results in error when file path is NULL
   
   
   # -- test
@@ -34,7 +34,7 @@ testthat::test_that( "readjob.pathNull", {
 
 testthat::test_that( "readjob.pathNA", {
   
-  #' @cx.tests Reead job to file results in error when file path is NA
+  #' @cx.tests Read job to file results in error when file path is NA
   
   
   # -- test
@@ -46,7 +46,7 @@ testthat::test_that( "readjob.pathNA", {
 
 testthat::test_that( "readjob.pathEmptyString", {
   
-  #' @cx.tests Reead job to file results in error when file path is an empty string
+  #' @cx.tests Read job to file results in error when file path is an empty string
   
   
   # -- test
@@ -59,7 +59,7 @@ testthat::test_that( "readjob.pathEmptyString", {
 
 testthat::test_that( "readjob.pathMultipleFiles", {
   
-  #' @cx.tests Reead job to file results in error when file path is a vector of multiple paths
+  #' @cx.tests Read job to file results in error when file path is a vector of multiple paths
   
   
   # -- stage 
@@ -98,7 +98,7 @@ testthat::test_that( "readjob.pathMultipleFiles", {
 
 testthat::test_that( "readjob.jobFileNotJSON", {
   
-  #' @cx.tests Reead job to file results in error when job file is not a JSON file
+  #' @cx.tests Read job to file results in error when job file is not a JSON file
   
   
   # -- stage 
