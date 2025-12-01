@@ -3,6 +3,7 @@
 #' @param x Archive file to create
 #' @param root Root directory for Zip archive
 #' @param files Sub-select files
+#' @param files.mustexist Specified files must exist
 #' @param include.dirs Include directories
 #' @param recursive Recursively process sub-directory content in `x`
 #' 
@@ -17,17 +18,24 @@
 #' 
 #' The vector `files` includes only those files that exist and in `root` or one
 #' of the sub-directories of `root` recursively. The vector `files` is 
-#' independent of the value for `recursive`.
+#' independent of the value for `recursive`. If a file in `files` does not exist
+#' and `files.mustexist = TRUE`, creating the archive results in an error.
 #' 
 #' If `files = NULL`, the function searches for files in `root`. If 
 #' `recursive = TRUE`, sub-directories of `root` is included.
+#' 
+#' If `x` already exists and is included in the list of resolved files, the 
+#' archive `x` is ignored and excluded to avoid Zip file recursion.  
 #' 
 #' The option `include.dirs` permits creating an empty directory structure 
 #' within the Zip archive. The directories do not have to exist under `root`.
 #'  
 #' All paths within the Zip archive are relative to the root of the archive.
 #' 
-#' The root of the Zip archive will include the text files `sha` and `md5` that
+#' The root fo the Zip archive includes the folder `.cx` that is reserved name
+#' and is used for internal reference files. 
+#' 
+#' The `.cx` folder of the Zip archive includes the text files `sha` and `md5` that
 #' contain the SHA-1 and MD-5 message digests or hash values, respectively, for
 #' each file in the archive. The digest/hash is derived on the source file
 #' before adding the file to the archive, i.e. digest/hash at source.
@@ -36,19 +44,100 @@
 #' and in the format `<digest/hash>  <file>` (note two spaces between the 
 #' digest/hash and file relative path).
 #' 
-#' Note that there is a theoretical time gap between a file being added to the
-#' archive and when the file digest/hash was derived. The time gap is dependent
-#' on the archive size as adding large files to the archive will take longer 
-#' than smaller files and thus the time between the digest/hash being derived 
-#' and the file being added to the archive is longer for larger files.
+#' Note that there is a theoretical time gap between when the file digest/hash 
+#' was derived and the file being added to the archive. The time gap is
+#' dependent on both the archive and file size as adding large files to the
+#' archive will take longer than smaller files and thus the time between the
+#' digest/hash being derived and the file being added to the archive is longer
+#' for larger files.
+#' 
+#' The archive file `.cx` folder also includes the `sources.json` manifest file.
+#' The source manifest uses the following format.
+#' 
+#' \preformatted{
+#' {
+#'   "type" : "filesystem",
+#'   "root" : <path corresponding to the root of the archive>,
+#'   "environment" : <environment name>
+#' }
+#' }
+#' 
+#' The `type = "filesystem"` is constant since the function uses the local file
+#' systems as the source location.
+#' 
+#' The `environment` attribute is the value of `nodename` returned by 
+#' \link[base]{Sys.info}.
+#' 
+#' It is assumed that the `root` attribute concatenated with the path of a file 
+#' within the archive resolves to the path of said file on the file system.
 #' 
 #' Note that the Zip archive is first created in the R session temporary 
 #' directory (\link[base]{tempdir}) before being copied to `x`. If the archive
 #' file `x` exists, it will be overwritten.
 #' 
+#' @examples
+#' 
+#' # -- create a Zip archive with all files in the current directory
+#' cxlib_archive( "myfiles.zip" )
+#' cxlib_archive( "myfiles.zip", root = "." )
+#' cxlib_archive( "myfiles.zip", root = base::getwd() )
+#'
+#'
+#' # -- create a Zip archive with all files in the specified directory
+#' base::writeLines("test file", con = file.path( tempdir(), "test.txt") )
+#' 
+#' cxlib_archive( "myfiles.zip", root = tempdir() )
+#'
+#'
+#' # -- create a Zip archive with all files in the root directory and any of its
+#' #    subdirectories
+#' dir.create( file.path( tempdir(), "test-directory" ), recursive = TRUE )
+#' base::writeLines("test file", con = file.path( tempdir(), "test-directory", "test.txt") )
+#' 
+#' cxlib_archive( "allfiles.zip", 
+#'                root = tempdir(), 
+#'                recursive = TRUE )
+#' 
+#' 
+#' # -- create a Zip archive with only selected files
+#' dir.create( file.path( tempdir(), "test-directory" ), recursive = TRUE )
+#' base::writeLines("test file", con = file.path( tempdir(), "test-directory", "test-1.txt") )
+#' base::writeLines("test file", con = file.path( tempdir(), "test-directory", "test-2.txt") )
+#' 
+#' cxlib_archive( "allfiles.zip", 
+#'                files = "test-directory/test-2.txt", 
+#'                root = tempdir(), recursive = TRUE )
+#'                
+#' cxlib_archive( "allfiles.zip", 
+#'                files = file.path( tempdir(), "test-directory", "test-2.txt"), 
+#'                root = tempdir(), 
+#'                recursive = TRUE )
+#' 
+#' 
+#' # -- create a Zip archive with only selected files and add empty directories
+#' #    note: empty directories do not have to exist in root
+#' 
+#' dir.create( file.path( tempdir(), "test-directory" ), recursive = TRUE )
+#' base::writeLines("test file", con = file.path( tempdir(), "test-directory", "test-1.txt") )
+#' base::writeLines("test file", con = file.path( tempdir(), "test-directory", "test-2.txt") )
+#' 
+#' cxlib_archive( "allfiles.zip", 
+#'                files = "test-directory/test-2.txt", 
+#'                include.dirs = c( "directory-1", "directory-2" ),
+#'                root = tempdir(), recursive = TRUE )
+#'                
+#' 
+#' 
+#' # -- create a Zip archive with an empty directory structure and no files
+#' cxlib_archive( "empty_dirs.zip", 
+#'                files = character(0), 
+#'                include.dirs = c( "programs", "logs", "outputs" ) )
+#' 
+#' 
+#' 
 #' @export
 
-cxlib_archive <- function( x, root = ".", files = NULL, include.dirs = NULL, recursive = TRUE ) {
+cxlib_archive <- function( x, root = ".", files = NULL, files.mustexist = FALSE, include.dirs = NULL, recursive = TRUE ) {
   
   
   if ( missing(x) || ! inherits(x, "character") || (length(x) != 1) || (base::trimws(x) == "") )
@@ -59,7 +148,7 @@ cxlib_archive <- function( x, root = ".", files = NULL, include.dirs = NULL, rec
     stop( "Parent directory for the Zip archive does not exist" )
   
   
-  if ( ! inherits(root, "character") || (length(x) != 1) || (base::trimws(x) == "") ||
+  if ( ! inherits(root, "character") || (length(root) != 1) || (base::trimws(root) == "") ||
        ! dir.exists(root) )
     stop( "Zip archive root directory not specified, an invalid value or does not exist" )
   
@@ -73,11 +162,32 @@ cxlib_archive <- function( x, root = ".", files = NULL, include.dirs = NULL, rec
     stop( "Could not create a temporary work area for the archive" )
   
   
+  # -- create .cx internal directory temporary work area
+  #    note: if this changes, update the hard code when creating internals and adding them to the zip file
+  xpath_internals <- file.path( xpath_wa, ".cx", fsep = "/" )
+  
+  if ( dir.exists(xpath_internals) || ! dir.create(xpath_internals, recursive = TRUE) )
+    stop( "Could not create directory for cx internal files in temporary work area for the archive" )
+  
+
   # -- standardize output path
-  xpath_out <- cxapp::cxapp_standardpath(x)
+  #    note: output path is an absolute path
+  xpath_out <- cxapp::cxapp_standardpath(base::trimws(x))
+  
+  if ( ! base::startsWith( xpath_out, "/" ) )
+    xpath_out <- cxapp::cxapp_standardpath( file.path( base::getwd(), xpath_out, fsep = "/" ) )
+  
+  
   
   # -- standardize root path
-  xpath_root <- cxapp::cxapp_standardpath(root)
+  #    note: xpath_root is an absolute path
+  xpath_root <- cxapp::cxapp_standardpath(base::trimws(root))
+  
+  if ( base::trimws(xpath_root) == "." )
+    xpath_root <- cxapp::cxapp_standardpath(base::getwd())
+
+  if ( ! base::startsWith( xpath_root, "/" ) )
+    xpath_root <- cxapp::cxapp_standardpath( file.path( base::getwd(), xpath_root, fsep = "/" ) )
   
   
   # -- derive files filter
@@ -92,8 +202,13 @@ cxlib_archive <- function( x, root = ".", files = NULL, include.dirs = NULL, rec
       # - futility if file entry is not relative or absolute path to a file 
       if ( ! inherits( xentry, "character") || ( base::trimws(xentry) == "" ) ||
            ( ! file.exists( xentry ) && 
-             ! file.exists( file.path( xpath_root, cxapp::cxapp_standardpath(xentry), fsep = "/" ) ) ) )
+             ! file.exists( file.path( xpath_root, cxapp::cxapp_standardpath(xentry), fsep = "/" ) ) ) ) {
+        
+        if ( files.mustexist )
+          stop( "One or more specified files do not exist")
+        
         next()
+      }
       
       # - absolute paths
       if ( base::startsWith( xentry, "/") ) {
@@ -118,34 +233,62 @@ cxlib_archive <- function( x, root = ".", files = NULL, include.dirs = NULL, rec
   # - all files
   if ( is.null(files) )
     lst_files <- cxapp::cxapp_standardpath( list.files( path = xpath_root, recursive = recursive, full.names = FALSE, include.dirs = FALSE ) )
+
+  
+  # - filter out archive x if it already exists in list of files
+
+  #   note: first if xpath_out is absolute path and in or subdirectory of xpath_root
+  if ( base::startsWith( xpath_out, paste0( xpath_root, "/" ) ) ) 
+    #  note: make xpath_out relative 
+    #  note: select all lst_files not equal to xpath_out relative
+    lst_files <- lst_files[ ! lst_files %in% base::substring( xpath_out, base::nchar(xpath_root) + 2 ) ]
+    
+
   
   
+
   # -- generate hashes
   
   # - SHA-1 
-  lst_sha <- base::unlist(lapply( lst_files, function(x) {
-    paste0( digest::digest( file.path( xpath_root, x, fsep = "/"), algo = "sha1", file = TRUE ),
-            "  ",
-            x )
-  }))
+  lst_sha <- character(0)
+  
+  if ( length(lst_files) > 0 )
+    lst_sha <- base::unlist(lapply( lst_files, function(x) {
+      paste0( digest::digest( file.path( xpath_root, x, fsep = "/"), algo = "sha1", file = TRUE ),
+              "  ",
+              x )
+    }))
   
   
-  if ( inherits( try( base::writeLines( lst_sha, con = file.path( xpath_wa, "sha", fsep = "/" ) ), silent = FALSE ), "try-error" ) )
+  if ( inherits( try( base::writeLines( lst_sha, con = file.path( xpath_internals, "sha", fsep = "/" ) ), silent = FALSE ), "try-error" ) )
     stop( "Could not create SHA-1 digest reference" )
   
   
   
   # - MD-5
-  lst_md5 <- base::unlist(lapply( lst_files, function(x) {
-    paste0( digest::digest( file.path( xpath_root, x, fsep = "/"), algo = "md5", file = TRUE ),
-            "  ",
-            x )
-  }))
-
-  if ( inherits( try( base::writeLines( lst_md5,  con = file.path( xpath_wa, "md5", fsep = "/" ) ), silent = FALSE ), "try-error" ) )
+  lst_md5 <- character(0)
+  
+  if ( length(lst_files) > 0 )
+    lst_md5 <- base::unlist(lapply( lst_files, function(x) {
+      paste0( digest::digest( file.path( xpath_root, x, fsep = "/"), algo = "md5", file = TRUE ),
+              "  ",
+              x )
+    }))
+  
+  if ( inherits( try( base::writeLines( lst_md5,  con = file.path( xpath_internals, "md5", fsep = "/" ) ), silent = FALSE ), "try-error" ) )
     stop( "Could not create MD-5 digest reference" )
   
-    
+
+  # -- sources manifest
+  lst_srcs <- list( "type" = "filesystem", 
+                    "path" = xpath_root, 
+                    "environment" = base::unname(base::Sys.info()[["nodename"]]) )
+
+  if ( inherits( try( base::writeLines( jsonlite::toJSON( lst_srcs, pretty = TRUE, auto_unbox = TRUE ),  
+                                        con = file.path( xpath_internals, "sources.json", fsep = "/" ) ), silent = FALSE ), "try-error" ) )
+    stop( "Could not create sources manifest reference" )
+  
+  
   
   # -- create archive
   
@@ -160,8 +303,14 @@ cxlib_archive <- function( x, root = ".", files = NULL, include.dirs = NULL, rec
     stop( "Failed to add files to archive" )
 
     
-  # - add digests
-  arch_file <- try( zip::zip_append( xpath_arch, c( "sha", "md5"), root = xpath_wa, recurse = FALSE, include_directories = FALSE, mode = "cherry-pick" ), silent = FALSE )
+  # - add internal reference files
+  #   note: internals are files that are saved in the .cx directory in the archive work area
+
+  arch_internals <- list.files( xpath_wa, all.files = TRUE, recursive = TRUE, full.names = FALSE, include.dirs = FALSE )
+
+  arch_file <- try( zip::zip_append( xpath_arch, 
+                                     arch_internals[ grepl( "^\\.cx/.*", arch_internals, ignore.case = TRUE, perl = TRUE) ], 
+                                     root = xpath_wa, recurse = FALSE, include_directories = FALSE, mode = "mirror" ), silent = FALSE )
   
   if ( inherits( arch_file, "try-error" ) )
     stop( "Failed to create archive" )
