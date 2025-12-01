@@ -2,6 +2,7 @@
 #' 
 #' @param x Zip archive
 #' @param extract.dir Location to extract files
+#' @param extract.cx Location to extract archive control files
 #' 
 #' @return Vector of extracted files
 #' 
@@ -13,23 +14,35 @@
 #' compressed files, any additional empty directories and digest files to 
 #' verify archive integrity. 
 #' 
-#' The root of the Zip archive should include the text files `sha` and `md5` that
-#' contain the SHA-1 and MD-5 message digests or hash values, respectively, for
-#' each file in the archive. The digest/hash is assumed to represent the source
-#' file digest/hash.
+#' The root fo the Zip archive should include the folder `.cx` that is reserved
+#' name and is used for internal reference files. 
+#' 
+#' The `.cx` folder of the Zip archive includes the text files `sha` and `md5` 
+#' that contain the SHA-1 and MD-5 message digests or hash values, respectively, 
+#' for each file in the archive. The digest/hash is assumed to represent the 
+#' source file digest/hash.
 #' 
 #' The format of the digest/hash file is one entry per file on individual lines
 #' and in the format `<digest/hash>  <file>` (note two spaces between the 
 #' digest/hash and file relative path).
+#' 
+#' If `extract.cx` is not `NULL`, `extract.cx` is assumed to represent the
+#' directory path where to extract the files within the `.cx` archive folder. 
+#' When `extract.cx = NULL`, the files in `.cx` are ignored and not extracted.
 #' 
 #' Note that the Zip archive is first extracted to the R session temporary 
 #' directory (\link[base]{tempdir}) to verify the integrity of extracted files 
 #' before each file being copied to `extract.dir`. If an extracted file from
 #' the archive exists in `extract.dir`, it will be overwritten. 
 #' 
+#' See \link[cxlib]{cxib_archive} for additional details.
+#' 
+#' 
+#' @examples
+#' 
 #' @export
 
-cxlib_unarchive <- function( x, extract.dir = "." ) {
+cxlib_unarchive <- function( x, extract.dir = ".", extract.cx = NULL ) {
 
     
   if ( missing(x) || ! inherits(x, "character") || (length(x) != 1) || (base::trimws(x) == "") )
@@ -43,15 +56,41 @@ cxlib_unarchive <- function( x, extract.dir = "." ) {
        ! dir.exists(extract.dir) )
     stop( "Zip archive extract target directory not specified, an invalid value or does not exist" )
   
+
+  if ( ! is.null(extract.cx) && 
+       ( ! inherits(extract.cx, "character") || (length(extract.cx) != 1) || (base::trimws(extract.cx) == "") ||
+         ! dir.exists(extract.cx) ) )
+    stop( "Zip archive extract target directory for internal files not specified, an invalid value or does not exist" )
   
+  
+    
   # -- standardize archive path
   xpath_arch <- cxapp::cxapp_standardpath(x)
   
   
   # -- standardize extract directory path
-  xpath_extdir <- cxapp::cxapp_standardpath(extract.dir)
+  #    note: ensure extract path is always absolute
+  xpath_extdir <- cxapp::cxapp_standardpath(base::trimws(extract.dir))
   
+  if ( ! base::startsWith( xpath_extdir, "/") )
+    xpath_extdir <- cxapp::cxapp_standardpath(file.path( base::getwd(), xpath_extdir, fsep = "/" ))
+
   
+  # -- standardize extract directory path for internals ... if specified
+  #    note: ensure extract path is always absolute
+  xpath_extcx <- NULL
+  
+  if ( ! is.null(extract.cx) ) {
+    
+    xpath_extcx <- cxapp::cxapp_standardpath(base::trimws(extract.cx))
+    
+    if ( ! base::startsWith( xpath_extcx, "/") )
+      xpath_extcx <- cxapp::cxapp_standardpath(file.path( base::getwd(), xpath_extcx, fsep = "/" ))
+    
+  }
+    
+  
+    
   # -- retrieve list of archive entries
   lst_contents <- try( zip::zip_list( xpath_arch ), silent = TRUE )
 
@@ -80,7 +119,7 @@ cxlib_unarchive <- function( x, extract.dir = "." ) {
   
   lst_archfiles <- lst_architems[ ! grepl( ".*/$", lst_architems ) ]
 
-  if ( all( ! c( "sha", "md5") %in% lst_archfiles ) )
+  if ( all( ! c( ".cx/sha", ".cx/md5") %in% lst_archfiles ) )
     stop( "SHA-1 or MD-5 digests for archive not avialble" )
   
 
@@ -98,8 +137,8 @@ cxlib_unarchive <- function( x, extract.dir = "." ) {
   
   
   # - integrity check
-  if ( ! file.exists( file.path( xpath_temp, "sha", fsep = "/" ) ) &&  
-       ! file.exists( file.path( xpath_temp, "md5", fsep = "/" ) ) )
+  if ( ! file.exists( file.path( xpath_temp, ".cx", "sha", fsep = "/" ) ) &&  
+       ! file.exists( file.path( xpath_temp, ".cx", "md5", fsep = "/" ) ) )
     stop( "SHA-1 or MD-5 digests for archive could not be found" )
   
 
@@ -107,9 +146,9 @@ cxlib_unarchive <- function( x, extract.dir = "." ) {
   
   lst_shadigest <- character(0)
   
-  if ( file.exists( file.path( xpath_temp, "sha", fsep = "/" ) ) ) {
+  if ( file.exists( file.path( xpath_temp, ".cx", "sha", fsep = "/" ) ) ) {
 
-    for ( xentry in base::readLines( file.path( xpath_temp, "sha", fsep = "/" ), warn = FALSE ) )
+    for ( xentry in base::readLines( file.path( xpath_temp, ".cx", "sha", fsep = "/" ), warn = FALSE ) )
       lst_shadigest[ gsub( "^(.*)\\s{2}(.*)$", "\\2", xentry ) ] <- gsub( "^(.*)\\s{2}(.*)$", "\\1", xentry )
     
     for ( xfile in base::names(lst_shadigest) )
@@ -123,9 +162,9 @@ cxlib_unarchive <- function( x, extract.dir = "." ) {
   
   lst_md5digest <- character(0)
   
-  if ( file.exists( file.path( xpath_temp, "md5", fsep = "/" ) ) ) {
+  if ( file.exists( file.path( xpath_temp, ".cx", "md5", fsep = "/" ) ) ) {
     
-    for ( xentry in base::readLines( file.path( xpath_temp, "md5", fsep = "/" ), warn = FALSE ) )
+    for ( xentry in base::readLines( file.path( xpath_temp, ".cx", "md5", fsep = "/" ), warn = FALSE ) )
       lst_md5digest[ gsub( "^(.*)\\s{2}(.*)$", "\\2", xentry ) ] <- gsub( "^(.*)\\s{2}(.*)$", "\\1", xentry )
     
     for ( xfile in base::names(lst_md5digest) )
@@ -139,7 +178,7 @@ cxlib_unarchive <- function( x, extract.dir = "." ) {
   
   lst_extracted <- character(0)
   
-  for ( xfile in lst_archfiles[ ! lst_archfiles %in% c( "sha", "md5") ] ) {
+  for ( xfile in lst_archfiles[ ! grepl( "^\\.cx/.*", lst_archfiles, ignore.case = TRUE, perl = TRUE ) ] ) {
     
     xpath_src <- file.path( xpath_temp, xfile, fsep = "/" )
     xpath_trgt <- file.path( xpath_extdir, xfile, fsep = "/" )
@@ -182,7 +221,21 @@ cxlib_unarchive <- function( x, extract.dir = "." ) {
       if ( ! dir.exists( file.path( xpath_extdir, xdir, fsep = "/" ) ) &&
            ! dir.create( file.path( xpath_extdir, xdir, fsep = "/" ), recursive = TRUE ) )
         stop( "Could not create empty directory from archive" )
-      
+
+  
+  # -- save extracted internal files
+  if ( ! is.null(extract.cx) ) {
+    
+    lst_internals <- list.files( file.path( xpath_temp, ".cx", fsep = "/" ), all.files = TRUE, recursive = FALSE, include.dirs = FALSE, full.names = TRUE )
+    lst_internals <- lst_internals[ ! base::basename(lst_internals) %in% c( ".", "..") ]
+
+    if ( length(lst_internals) > 0 )
+      for ( xfile in lst_internals )
+        if ( ! file.copy( xfile, file.path( xpath_extcx, base::basename(xfile), fsep = "/" ), copy.mode = FALSE, copy.date = FALSE ) )
+          stop( "Could not extract one or more internal files to the specified directory" )
+    
+  }
+        
 
 
   # -- return list of extracted files

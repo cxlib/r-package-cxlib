@@ -457,10 +457,18 @@ testthat::test_that( "unarchive.archiveFilesOnly", {
   test_srcfiles <- list.files( test_src, recursive = TRUE, full.names = FALSE, include.dirs = FALSE )
   
 
+
+  # - internal .cx directory
   
+  test_cx <- file.path( test_src, ".cx", fsep = "/" )
+  
+  if ( dir.exists( test_cx ) || ! dir.create( test_cx, recursive = TRUE ) )
+    testthat::fail( "Could not stage test cx directory" )
+  
+    
   
   # - test content digests
-  
+
   test_shadigests <- base::unlist(sapply( base::sort(test_srcfiles), function(x) {
     digest::digest( file.path( test_src, x, fsep = "/"), algo = "sha1", file = TRUE )
   }, USE.NAMES = TRUE), use.names = TRUE )
@@ -470,7 +478,7 @@ testthat::test_that( "unarchive.archiveFilesOnly", {
     base::unlist(lapply( test_srcfiles, function(x) {
       paste0( test_shadigests[ x ], "  ", x )
     })), 
-    con = file.path( test_src, "sha", fsep = "/" )
+    con = file.path( test_cx, "sha", fsep = "/" )
   )
   
   
@@ -482,14 +490,14 @@ testthat::test_that( "unarchive.archiveFilesOnly", {
     base::unlist(lapply( test_srcfiles, function(x) {
       paste0( test_md5digests[ x ], "  ", x )
     })), 
-    con = file.path( test_src, "md5", fsep = "/" )
+    con = file.path( test_cx, "md5", fsep = "/" )
   )
   
   
   # - test file
   test_archive <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-", tmpdir = test_root, fileext = ".zip" ) )
   
-  zip::zip( test_archive, list.files( test_src, recursive = TRUE, full.names = FALSE, include.dirs = FALSE), root = test_src, mode = "mirror" )
+  zip::zip( test_archive, list.files( test_src, all.files = TRUE, recursive = TRUE, full.names = FALSE, include.dirs = FALSE), root = test_src, mode = "mirror" )
   
   if ( ! file.exists(test_archive) )
     testthat::fail( "Could not stage test archive" )
@@ -504,6 +512,8 @@ testthat::test_that( "unarchive.archiveFilesOnly", {
   if ( ! dir.exists( test_extdir ) && ! dir.create( test_extdir, recursive = TRUE ) )
     testthat::fail("Could note stage test extract directory")
   
+
+
   
   # -- test
   result <- cxlib::cxlib_unarchive( test_archive, extract.dir = test_extdir )
@@ -603,6 +613,14 @@ testthat::test_that( "unarchive.archiveFilesOnlySHAMissmatch", {
   
   
   
+  # - internal .cx directory
+  
+  test_cx <- file.path( test_src, ".cx", fsep = "/" )
+  
+  if ( dir.exists( test_cx ) || ! dir.create( test_cx, recursive = TRUE ) )
+    testthat::fail( "Could not stage test cx directory" )
+  
+  
   
   # - test content digests
   
@@ -622,7 +640,7 @@ testthat::test_that( "unarchive.archiveFilesOnlySHAMissmatch", {
     base::unlist(lapply( test_srcfiles, function(x) {
       paste0( corrupt_shadigests[ x ], "  ", x )
     })), 
-    con = file.path( test_src, "sha", fsep = "/" )
+    con = file.path( test_cx, "sha", fsep = "/" )
   )
   
   
@@ -634,14 +652,14 @@ testthat::test_that( "unarchive.archiveFilesOnlySHAMissmatch", {
     base::unlist(lapply( test_srcfiles, function(x) {
       paste0( test_md5digests[ x ], "  ", x )
     })), 
-    con = file.path( test_src, "md5", fsep = "/" )
+    con = file.path( test_cx, "md5", fsep = "/" )
   )
   
   
   # - test file
   test_archive <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-", tmpdir = test_root, fileext = ".zip" ) )
   
-  zip::zip( test_archive, list.files( test_src, recursive = TRUE, full.names = FALSE, include.dirs = FALSE), root = test_src, mode = "mirror" )
+  zip::zip( test_archive, list.files( test_src, all.files = TRUE, recursive = TRUE, full.names = FALSE, include.dirs = FALSE), root = test_src, mode = "mirror" )
   
   if ( ! file.exists(test_archive) )
     testthat::fail( "Could not stage test archive" )
@@ -655,6 +673,7 @@ testthat::test_that( "unarchive.archiveFilesOnlySHAMissmatch", {
   
   if ( ! dir.exists( test_extdir ) && ! dir.create( test_extdir, recursive = TRUE ) )
     testthat::fail("Could note stage test extract directory")
+  
   
   
   # -- test
@@ -724,6 +743,15 @@ testthat::test_that( "unarchive.archiveFilesOnlyMD5Missmatch", {
   
   
   
+  # - internal .cx directory
+  
+  test_cx <- file.path( test_src, ".cx", fsep = "/" )
+  
+  if ( dir.exists( test_cx ) || ! dir.create( test_cx, recursive = TRUE ) )
+    testthat::fail( "Could not stage test cx directory" )
+  
+  
+  
   # - test content digests
   
   test_shadigests <- base::unlist(sapply( base::sort(test_srcfiles), function(x) {
@@ -735,7 +763,7 @@ testthat::test_that( "unarchive.archiveFilesOnlyMD5Missmatch", {
     base::unlist(lapply( test_srcfiles, function(x) {
       paste0( test_shadigests[ x ], "  ", x )
     })), 
-    con = file.path( test_src, "sha", fsep = "/" )
+    con = file.path( test_cx, "sha", fsep = "/" )
   )
   
   
@@ -755,14 +783,14 @@ testthat::test_that( "unarchive.archiveFilesOnlyMD5Missmatch", {
     base::unlist(lapply( test_srcfiles, function(x) {
       paste0( corrupt_md5digests[ x ], "  ", x )
     })), 
-    con = file.path( test_src, "md5", fsep = "/" )
+    con = file.path( test_cx, "md5", fsep = "/" )
   )
   
   
   # - test file
   test_archive <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-", tmpdir = test_root, fileext = ".zip" ) )
   
-  zip::zip( test_archive, list.files( test_src, recursive = TRUE, full.names = FALSE, include.dirs = FALSE), root = test_src, mode = "mirror" )
+  zip::zip( test_archive, list.files( test_src, all.files = TRUE, recursive = TRUE, full.names = FALSE, include.dirs = FALSE), root = test_src, mode = "mirror" )
   
   if ( ! file.exists(test_archive) )
     testthat::fail( "Could not stage test archive" )
@@ -778,9 +806,10 @@ testthat::test_that( "unarchive.archiveFilesOnlyMD5Missmatch", {
     testthat::fail("Could note stage test extract directory")
   
   
+
+  
   # -- test
   testthat::expect_error( cxlib::cxlib_unarchive( test_archive, extract.dir = test_extdir ), regexp = "^MD-5 integrity check failed for an archive file$" )
-  
   
   # -- assertions
   
@@ -844,6 +873,15 @@ testthat::test_that( "unarchive.archiveFilesWithDirectories", {
   
   
   
+  # - internal .cx directory
+  
+  test_cx <- file.path( test_src, ".cx", fsep = "/" )
+  
+  if ( dir.exists( test_cx ) || ! dir.create( test_cx, recursive = TRUE ) )
+    testthat::fail( "Could not stage test cx directory" )
+  
+  
+  
   
   # - test content digests
   
@@ -856,7 +894,7 @@ testthat::test_that( "unarchive.archiveFilesWithDirectories", {
     base::unlist(lapply( test_srcfiles, function(x) {
       paste0( test_shadigests[ x ], "  ", x )
     })), 
-    con = file.path( test_src, "sha", fsep = "/" )
+    con = file.path( test_cx, "sha", fsep = "/" )
   )
   
   
@@ -868,7 +906,7 @@ testthat::test_that( "unarchive.archiveFilesWithDirectories", {
     base::unlist(lapply( test_srcfiles, function(x) {
       paste0( test_md5digests[ x ], "  ", x )
     })), 
-    con = file.path( test_src, "md5", fsep = "/" )
+    con = file.path( test_cx, "md5", fsep = "/" )
   )
   
   
@@ -904,7 +942,7 @@ testthat::test_that( "unarchive.archiveFilesWithDirectories", {
   test_archive <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-", tmpdir = test_root, fileext = ".zip" ) )
   
   zip::zip( test_archive, 
-            c( list.files( test_src, recursive = TRUE, full.names = FALSE, include.dirs = FALSE), 
+            c( list.files( test_src, all.files = TRUE, recursive = TRUE, full.names = FALSE, include.dirs = FALSE), 
                test_emptydirs_ref),
             include_directories = TRUE,
             root = test_src, 
@@ -913,8 +951,7 @@ testthat::test_that( "unarchive.archiveFilesWithDirectories", {
   if ( ! file.exists(test_archive) )
     testthat::fail( "Could not stage test archive" )
   
-  #print(zip::zip_list( test_archive))
-  
+
   
   # - extract directory
   
@@ -924,9 +961,11 @@ testthat::test_that( "unarchive.archiveFilesWithDirectories", {
     testthat::fail("Could note stage test extract directory")
   
   
+
+  
+  
   # -- test
   result <- cxlib::cxlib_unarchive( test_archive, extract.dir = test_extdir )
-  
   
   
   # -- expected
@@ -941,7 +980,7 @@ testthat::test_that( "unarchive.archiveFilesWithDirectories", {
     if ( (length(expected_dirs) == 0) || all( ! base::startsWith( expected_dirs, paste0( expdir, "/")) ) )
       expected_dirs <- base::unique(append( expected_dirs, expdir ))
   
-  #print(expected_dirs)
+
   
   # - expected SHA-1
   expected_sha <-test_shadigests
@@ -988,3 +1027,963 @@ testthat::test_that( "unarchive.archiveFilesWithDirectories", {
 
 
 
+
+
+
+testthat::test_that( "unarchive.archiveFilesOnlyExtractCxNA", {
+  
+  #' @cx.tests Extracting an archive file with files only with target extract directory for internal files equal to NA
+  
+  
+  # -- stage 
+  
+  test_root <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-area-", tmpdir = base::tempdir(), fileext = "") )
+  
+  on.exit({
+    base::unlink( test_root, recursive = TRUE, force = TRUE )
+  }, add = TRUE )
+  
+  if ( ! dir.exists( test_root ) && ! dir.create( test_root, recursive = TRUE ) )
+    testthat::fail("Could not create test area")
+  
+  
+  # - test content directories
+  
+  test_src <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-source-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( ! dir.exists( test_src ) && ! dir.create( test_src, recursive = TRUE ) )
+    testthat::fail("Could note stage test source directory")
+  
+  test_subdirs <- replicate( 5, 
+                             paste( sample( c( base::letters, base::LETTERS, as.character(0:9) ), sample(10:50, 1), replace = TRUE ), collapse = "" ), 
+                             simplify = TRUE )
+  
+  for ( xpath in test_subdirs )
+    if ( ! dir.exists(file.path( test_src, xpath, fsep = "/")) && ! dir.create( file.path( test_src, xpath, fsep = "/"), recursive = TRUE) )
+      testthat::fail( "Could not stage source subdirectory" )
+  
+  
+  # - test content files  
+  
+  test_files <- replicate( 2, 
+                           cxapp::cxapp_standardpath( base::tempfile( pattern = "test-file-", 
+                                                                      tmpdir = file.path( test_src, sample( test_subdirs, 1), fsep = "/"), 
+                                                                      fileext = ".txt" ) ), 
+                           simplify = TRUE )
+  
+  
+  for ( xsrcfile in test_files )
+    base::writeLines( paste( sample( c( base::letters, base::LETTERS, as.character(0:9) ), sample(50:1024, 1), replace = TRUE ), collapse = "" ),
+                      con = xsrcfile ) 
+  
+  test_srcfiles <- list.files( test_src, recursive = TRUE, full.names = FALSE, include.dirs = FALSE )
+  
+  
+  
+  # - internal .cx directory
+  
+  test_cx <- file.path( test_src, ".cx", fsep = "/" )
+  
+  if ( dir.exists( test_cx ) || ! dir.create( test_cx, recursive = TRUE ) )
+    testthat::fail( "Could not stage test cx directory" )
+  
+  
+  
+  # - test content digests
+  
+  test_shadigests <- base::unlist(sapply( base::sort(test_srcfiles), function(x) {
+    digest::digest( file.path( test_src, x, fsep = "/"), algo = "sha1", file = TRUE )
+  }, USE.NAMES = TRUE), use.names = TRUE )
+  
+  
+  base::writeLines(
+    base::unlist(lapply( test_srcfiles, function(x) {
+      paste0( test_shadigests[ x ], "  ", x )
+    })), 
+    con = file.path( test_cx, "sha", fsep = "/" )
+  )
+  
+  
+  test_md5digests <- base::unlist(sapply( base::sort(test_srcfiles), function(x) {
+    digest::digest( file.path( test_src, x, fsep = "/"), algo = "md5", file = TRUE )
+  }, USE.NAMES = TRUE), use.names = TRUE )
+  
+  base::writeLines(
+    base::unlist(lapply( test_srcfiles, function(x) {
+      paste0( test_md5digests[ x ], "  ", x )
+    })), 
+    con = file.path( test_cx, "md5", fsep = "/" )
+  )
+  
+  
+  # - test file
+  test_archive <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-", tmpdir = test_root, fileext = ".zip" ) )
+  
+  zip::zip( test_archive, list.files( test_src, all.files = TRUE, recursive = TRUE, full.names = FALSE, include.dirs = FALSE), root = test_src, mode = "mirror" )
+  
+  if ( ! file.exists(test_archive) )
+    testthat::fail( "Could not stage test archive" )
+  
+  
+  
+  
+  # - extract directory
+  
+  test_extdir <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-extdir-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( ! dir.exists( test_extdir ) && ! dir.create( test_extdir, recursive = TRUE ) )
+    testthat::fail("Could note stage test extract directory")
+  
+  
+
+  
+  # -- test
+  testthat::expect_error( cxlib::cxlib_unarchive( test_archive, extract.dir = test_extdir, extract.cx = NA ),
+                          regexp = "^Zip archive extract target directory for internal files not specified, an invalid value or does not exist$" )
+                          
+  
+
+  # -- assertions
+
+  # - extracted files
+  testthat::expect_length( list.files( test_extdir, all.files = TRUE, recursive = TRUE ), 0 )
+  
+})
+
+
+
+
+testthat::test_that( "unarchive.archiveFilesOnlyExtractCxEmptyString", {
+  
+  #' @cx.tests Extracting an archive file with files only with target extract directory for internal files equal to an empty string
+  
+  
+  # -- stage 
+  
+  test_root <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-area-", tmpdir = base::tempdir(), fileext = "") )
+  
+  on.exit({
+    base::unlink( test_root, recursive = TRUE, force = TRUE )
+  }, add = TRUE )
+  
+  if ( ! dir.exists( test_root ) && ! dir.create( test_root, recursive = TRUE ) )
+    testthat::fail("Could not create test area")
+  
+  
+  # - test content directories
+  
+  test_src <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-source-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( ! dir.exists( test_src ) && ! dir.create( test_src, recursive = TRUE ) )
+    testthat::fail("Could note stage test source directory")
+  
+  test_subdirs <- replicate( 5, 
+                             paste( sample( c( base::letters, base::LETTERS, as.character(0:9) ), sample(10:50, 1), replace = TRUE ), collapse = "" ), 
+                             simplify = TRUE )
+  
+  for ( xpath in test_subdirs )
+    if ( ! dir.exists(file.path( test_src, xpath, fsep = "/")) && ! dir.create( file.path( test_src, xpath, fsep = "/"), recursive = TRUE) )
+      testthat::fail( "Could not stage source subdirectory" )
+  
+  
+  # - test content files  
+  
+  test_files <- replicate( 2, 
+                           cxapp::cxapp_standardpath( base::tempfile( pattern = "test-file-", 
+                                                                      tmpdir = file.path( test_src, sample( test_subdirs, 1), fsep = "/"), 
+                                                                      fileext = ".txt" ) ), 
+                           simplify = TRUE )
+  
+  
+  for ( xsrcfile in test_files )
+    base::writeLines( paste( sample( c( base::letters, base::LETTERS, as.character(0:9) ), sample(50:1024, 1), replace = TRUE ), collapse = "" ),
+                      con = xsrcfile ) 
+  
+  test_srcfiles <- list.files( test_src, recursive = TRUE, full.names = FALSE, include.dirs = FALSE )
+  
+  
+  
+  # - internal .cx directory
+  
+  test_cx <- file.path( test_src, ".cx", fsep = "/" )
+  
+  if ( dir.exists( test_cx ) || ! dir.create( test_cx, recursive = TRUE ) )
+    testthat::fail( "Could not stage test cx directory" )
+  
+  
+  
+  # - test content digests
+  
+  test_shadigests <- base::unlist(sapply( base::sort(test_srcfiles), function(x) {
+    digest::digest( file.path( test_src, x, fsep = "/"), algo = "sha1", file = TRUE )
+  }, USE.NAMES = TRUE), use.names = TRUE )
+  
+  
+  base::writeLines(
+    base::unlist(lapply( test_srcfiles, function(x) {
+      paste0( test_shadigests[ x ], "  ", x )
+    })), 
+    con = file.path( test_cx, "sha", fsep = "/" )
+  )
+  
+  
+  test_md5digests <- base::unlist(sapply( base::sort(test_srcfiles), function(x) {
+    digest::digest( file.path( test_src, x, fsep = "/"), algo = "md5", file = TRUE )
+  }, USE.NAMES = TRUE), use.names = TRUE )
+  
+  base::writeLines(
+    base::unlist(lapply( test_srcfiles, function(x) {
+      paste0( test_md5digests[ x ], "  ", x )
+    })), 
+    con = file.path( test_cx, "md5", fsep = "/" )
+  )
+  
+  
+  # - test file
+  test_archive <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-", tmpdir = test_root, fileext = ".zip" ) )
+  
+  zip::zip( test_archive, list.files( test_src, all.files = TRUE, recursive = TRUE, full.names = FALSE, include.dirs = FALSE), root = test_src, mode = "mirror" )
+  
+  if ( ! file.exists(test_archive) )
+    testthat::fail( "Could not stage test archive" )
+  
+  
+  
+  
+  # - extract directory
+  
+  test_extdir <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-extdir-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( ! dir.exists( test_extdir ) && ! dir.create( test_extdir, recursive = TRUE ) )
+    testthat::fail("Could note stage test extract directory")
+  
+  
+  
+  
+  # -- test
+  testthat::expect_error( cxlib::cxlib_unarchive( test_archive, extract.dir = test_extdir, extract.cx = "    " ),
+                          regexp = "^Zip archive extract target directory for internal files not specified, an invalid value or does not exist$" )
+  
+  
+  
+  # -- assertions
+  
+  # - extracted files
+  testthat::expect_length( list.files( test_extdir, all.files = TRUE, recursive = TRUE ), 0 )
+  
+})
+
+
+
+
+testthat::test_that( "unarchive.archiveFilesOnlyExtractCxDirNotExist", {
+  
+  #' @cx.tests Extracting an archive file with files only with target extract directory for internal files not existing
+  
+  
+  # -- stage 
+  
+  test_root <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-area-", tmpdir = base::tempdir(), fileext = "") )
+  
+  on.exit({
+    base::unlink( test_root, recursive = TRUE, force = TRUE )
+  }, add = TRUE )
+  
+  if ( ! dir.exists( test_root ) && ! dir.create( test_root, recursive = TRUE ) )
+    testthat::fail("Could not create test area")
+  
+  
+  # - test content directories
+  
+  test_src <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-source-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( ! dir.exists( test_src ) && ! dir.create( test_src, recursive = TRUE ) )
+    testthat::fail("Could note stage test source directory")
+  
+  test_subdirs <- replicate( 5, 
+                             paste( sample( c( base::letters, base::LETTERS, as.character(0:9) ), sample(10:50, 1), replace = TRUE ), collapse = "" ), 
+                             simplify = TRUE )
+  
+  for ( xpath in test_subdirs )
+    if ( ! dir.exists(file.path( test_src, xpath, fsep = "/")) && ! dir.create( file.path( test_src, xpath, fsep = "/"), recursive = TRUE) )
+      testthat::fail( "Could not stage source subdirectory" )
+  
+  
+  # - test content files  
+  
+  test_files <- replicate( 2, 
+                           cxapp::cxapp_standardpath( base::tempfile( pattern = "test-file-", 
+                                                                      tmpdir = file.path( test_src, sample( test_subdirs, 1), fsep = "/"), 
+                                                                      fileext = ".txt" ) ), 
+                           simplify = TRUE )
+  
+  
+  for ( xsrcfile in test_files )
+    base::writeLines( paste( sample( c( base::letters, base::LETTERS, as.character(0:9) ), sample(50:1024, 1), replace = TRUE ), collapse = "" ),
+                      con = xsrcfile ) 
+  
+  test_srcfiles <- list.files( test_src, recursive = TRUE, full.names = FALSE, include.dirs = FALSE )
+  
+  
+  
+  # - internal .cx directory
+  
+  test_cx <- file.path( test_src, ".cx", fsep = "/" )
+  
+  if ( dir.exists( test_cx ) || ! dir.create( test_cx, recursive = TRUE ) )
+    testthat::fail( "Could not stage test cx directory" )
+  
+  
+  
+  # - test content digests
+  
+  test_shadigests <- base::unlist(sapply( base::sort(test_srcfiles), function(x) {
+    digest::digest( file.path( test_src, x, fsep = "/"), algo = "sha1", file = TRUE )
+  }, USE.NAMES = TRUE), use.names = TRUE )
+  
+  
+  base::writeLines(
+    base::unlist(lapply( test_srcfiles, function(x) {
+      paste0( test_shadigests[ x ], "  ", x )
+    })), 
+    con = file.path( test_cx, "sha", fsep = "/" )
+  )
+  
+  
+  test_md5digests <- base::unlist(sapply( base::sort(test_srcfiles), function(x) {
+    digest::digest( file.path( test_src, x, fsep = "/"), algo = "md5", file = TRUE )
+  }, USE.NAMES = TRUE), use.names = TRUE )
+  
+  base::writeLines(
+    base::unlist(lapply( test_srcfiles, function(x) {
+      paste0( test_md5digests[ x ], "  ", x )
+    })), 
+    con = file.path( test_cx, "md5", fsep = "/" )
+  )
+  
+  
+  # - test file
+  test_archive <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-", tmpdir = test_root, fileext = ".zip" ) )
+  
+  zip::zip( test_archive, list.files( test_src, all.files = TRUE, recursive = TRUE, full.names = FALSE, include.dirs = FALSE), root = test_src, mode = "mirror" )
+  
+  if ( ! file.exists(test_archive) )
+    testthat::fail( "Could not stage test archive" )
+  
+  
+  
+  
+  # - extract directory
+  
+  test_extdir <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-extdir-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( ! dir.exists( test_extdir ) && ! dir.create( test_extdir, recursive = TRUE ) )
+    testthat::fail("Could note stage test extract directory")
+  
+  
+  # - extract cx directory
+  
+  test_cx <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-extcx-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( dir.exists( test_cx ) )
+    testthat::fail( "Unexpected test target extraction directory for internal files exists" )
+  
+  
+  
+  # -- test
+  testthat::expect_error( cxlib::cxlib_unarchive( test_archive, extract.dir = test_extdir, extract.cx = test_cx ),
+                          regexp = "^Zip archive extract target directory for internal files not specified, an invalid value or does not exist$" )
+  
+  
+  
+  # -- assertions
+  
+  # - extracted files
+  testthat::expect_length( list.files( test_extdir, all.files = TRUE, recursive = TRUE ), 0 )
+  
+})
+
+
+
+
+
+testthat::test_that( "unarchive.archiveFilesOnlyMultiExtractCxDir", {
+  
+  #' @cx.tests Extracting an archive file with files only with multiple target extract directories for internal files results in an error
+  
+  
+  # -- stage 
+  
+  test_root <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-area-", tmpdir = base::tempdir(), fileext = "") )
+  
+  on.exit({
+    base::unlink( test_root, recursive = TRUE, force = TRUE )
+  }, add = TRUE )
+  
+  if ( ! dir.exists( test_root ) && ! dir.create( test_root, recursive = TRUE ) )
+    testthat::fail("Could not create test area")
+  
+  
+  # - test content directories
+  
+  test_src <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-source-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( ! dir.exists( test_src ) && ! dir.create( test_src, recursive = TRUE ) )
+    testthat::fail("Could note stage test source directory")
+  
+  test_subdirs <- replicate( 5, 
+                             paste( sample( c( base::letters, base::LETTERS, as.character(0:9) ), sample(10:50, 1), replace = TRUE ), collapse = "" ), 
+                             simplify = TRUE )
+  
+  for ( xpath in test_subdirs )
+    if ( ! dir.exists(file.path( test_src, xpath, fsep = "/")) && ! dir.create( file.path( test_src, xpath, fsep = "/"), recursive = TRUE) )
+      testthat::fail( "Could not stage source subdirectory" )
+  
+  
+  # - test content files  
+  
+  test_files <- replicate( 2, 
+                           cxapp::cxapp_standardpath( base::tempfile( pattern = "test-file-", 
+                                                                      tmpdir = file.path( test_src, sample( test_subdirs, 1), fsep = "/"), 
+                                                                      fileext = ".txt" ) ), 
+                           simplify = TRUE )
+  
+  
+  for ( xsrcfile in test_files )
+    base::writeLines( paste( sample( c( base::letters, base::LETTERS, as.character(0:9) ), sample(50:1024, 1), replace = TRUE ), collapse = "" ),
+                      con = xsrcfile ) 
+  
+  test_srcfiles <- list.files( test_src, recursive = TRUE, full.names = FALSE, include.dirs = FALSE )
+  
+  
+  
+  # - internal .cx directory
+  
+  test_cx <- file.path( test_src, ".cx", fsep = "/" )
+  
+  if ( dir.exists( test_cx ) || ! dir.create( test_cx, recursive = TRUE ) )
+    testthat::fail( "Could not stage test cx directory" )
+  
+  
+  
+  # - test content digests
+  
+  test_shadigests <- base::unlist(sapply( base::sort(test_srcfiles), function(x) {
+    digest::digest( file.path( test_src, x, fsep = "/"), algo = "sha1", file = TRUE )
+  }, USE.NAMES = TRUE), use.names = TRUE )
+  
+  
+  base::writeLines(
+    base::unlist(lapply( test_srcfiles, function(x) {
+      paste0( test_shadigests[ x ], "  ", x )
+    })), 
+    con = file.path( test_cx, "sha", fsep = "/" )
+  )
+  
+  
+  test_md5digests <- base::unlist(sapply( base::sort(test_srcfiles), function(x) {
+    digest::digest( file.path( test_src, x, fsep = "/"), algo = "md5", file = TRUE )
+  }, USE.NAMES = TRUE), use.names = TRUE )
+  
+  base::writeLines(
+    base::unlist(lapply( test_srcfiles, function(x) {
+      paste0( test_md5digests[ x ], "  ", x )
+    })), 
+    con = file.path( test_cx, "md5", fsep = "/" )
+  )
+  
+  
+  # - test file
+  test_archive <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-", tmpdir = test_root, fileext = ".zip" ) )
+  
+  zip::zip( test_archive, list.files( test_src, all.files = TRUE, recursive = TRUE, full.names = FALSE, include.dirs = FALSE), root = test_src, mode = "mirror" )
+  
+  if ( ! file.exists(test_archive) )
+    testthat::fail( "Could not stage test archive" )
+  
+  
+  
+  
+  # - extract directory
+  
+  test_extdir <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-extdir-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( ! dir.exists( test_extdir ) && ! dir.create( test_extdir, recursive = TRUE ) )
+    testthat::fail("Could note stage test extract directory")
+  
+  
+  # - extract cx directory
+  
+  test_cx <- replicate( 5, 
+                        cxapp::cxapp_standardpath( base::tempfile( pattern = "test-extcx-", tmpdir = test_root, fileext = "" ) ), 
+                        simplify = TRUE )
+  
+  for ( xdir in test_cx )
+    if ( dir.exists(xdir) || ! dir.create( xdir, recursive = TRUE) )
+      testthat::fail( "Could not stage test target extraction directory for internal files" )
+  
+  if ( ( length(test_cx) < 2 ) || any( ! dir.exists(test_cx) ) )
+    testthat::fail( "Multiple test extraction directories for cx not established")
+   
+
+  # -- test
+  testthat::expect_error( cxlib::cxlib_unarchive( test_archive, extract.dir = test_extdir, extract.cx = test_cx ),
+                          regexp = "^Zip archive extract target directory for internal files not specified, an invalid value or does not exist$" )
+  
+  
+  
+  # -- assertions
+  
+  # - extracted files
+  testthat::expect_length( list.files( test_extdir, all.files = TRUE, recursive = TRUE ), 0 )
+  
+})
+
+
+
+
+
+testthat::test_that( "unarchive.archiveFilesOnlyDefaultExtractInternalFiles", {
+  
+  #' @cx.tests Extracting an archive file with files only and default for extract of internal files
+  
+  
+  # -- stage 
+  
+  test_root <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-area-", tmpdir = base::tempdir(), fileext = "") )
+  
+  on.exit({
+    base::unlink( test_root, recursive = TRUE, force = TRUE )
+  }, add = TRUE )
+  
+  if ( ! dir.exists( test_root ) && ! dir.create( test_root, recursive = TRUE ) )
+    testthat::fail("Could not create test area")
+  
+  
+  # - test content directories
+  
+  test_src <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-source-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( ! dir.exists( test_src ) && ! dir.create( test_src, recursive = TRUE ) )
+    testthat::fail("Could note stage test source directory")
+  
+  test_subdirs <- replicate( 5, 
+                             paste( sample( c( base::letters, base::LETTERS, as.character(0:9) ), sample(10:50, 1), replace = TRUE ), collapse = "" ), 
+                             simplify = TRUE )
+  
+  for ( xpath in test_subdirs )
+    if ( ! dir.exists(file.path( test_src, xpath, fsep = "/")) && ! dir.create( file.path( test_src, xpath, fsep = "/"), recursive = TRUE) )
+      testthat::fail( "Could not stage source subdirectory" )
+  
+  
+  # - test content files  
+  
+  test_files <- replicate( 2, 
+                           cxapp::cxapp_standardpath( base::tempfile( pattern = "test-file-", 
+                                                                      tmpdir = file.path( test_src, sample( test_subdirs, 1), fsep = "/"), 
+                                                                      fileext = ".txt" ) ), 
+                           simplify = TRUE )
+  
+  
+  for ( xsrcfile in test_files )
+    base::writeLines( paste( sample( c( base::letters, base::LETTERS, as.character(0:9) ), sample(50:1024, 1), replace = TRUE ), collapse = "" ),
+                      con = xsrcfile ) 
+  
+  test_srcfiles <- list.files( test_src, recursive = TRUE, full.names = FALSE, include.dirs = FALSE )
+  
+  
+  
+  # - internal .cx directory
+  
+  test_cx <- file.path( test_src, ".cx", fsep = "/" )
+  
+  if ( dir.exists( test_cx ) || ! dir.create( test_cx, recursive = TRUE ) )
+    testthat::fail( "Could not stage test cx directory" )
+  
+  
+  
+  # - test content digests
+  
+  test_shadigests <- base::unlist(sapply( base::sort(test_srcfiles), function(x) {
+    digest::digest( file.path( test_src, x, fsep = "/"), algo = "sha1", file = TRUE )
+  }, USE.NAMES = TRUE), use.names = TRUE )
+  
+  
+  base::writeLines(
+    base::unlist(lapply( test_srcfiles, function(x) {
+      paste0( test_shadigests[ x ], "  ", x )
+    })), 
+    con = file.path( test_cx, "sha", fsep = "/" )
+  )
+  
+  
+  test_md5digests <- base::unlist(sapply( base::sort(test_srcfiles), function(x) {
+    digest::digest( file.path( test_src, x, fsep = "/"), algo = "md5", file = TRUE )
+  }, USE.NAMES = TRUE), use.names = TRUE )
+  
+  base::writeLines(
+    base::unlist(lapply( test_srcfiles, function(x) {
+      paste0( test_md5digests[ x ], "  ", x )
+    })), 
+    con = file.path( test_cx, "md5", fsep = "/" )
+  )
+  
+  
+  # - test file
+  test_archive <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-", tmpdir = test_root, fileext = ".zip" ) )
+  
+  zip::zip( test_archive, list.files( test_src, all.files = TRUE, recursive = TRUE, full.names = FALSE, include.dirs = FALSE), root = test_src, mode = "mirror" )
+  
+  if ( ! file.exists(test_archive) )
+    testthat::fail( "Could not stage test archive" )
+  
+  
+  
+  
+  # - extract directory
+  
+  test_extdir <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-extdir-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( ! dir.exists( test_extdir ) && ! dir.create( test_extdir, recursive = TRUE ) )
+    testthat::fail("Could note stage test extract directory")
+  
+  
+  # - extract directory for internal files
+  
+  test_extcx <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-extcx-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( ! dir.exists( test_extcx ) && ! dir.create( test_extcx, recursive = TRUE ) )
+    testthat::fail("Could note stage test .cx extract directory")
+  
+  
+  
+  # -- test
+  result <- cxlib::cxlib_unarchive( test_archive, extract.dir = test_extdir)
+  
+
+  # -- expected
+  
+  # - files extracted
+  expected_files <- test_srcfiles
+  
+
+  # -- assertions
+  
+  # - result
+  testthat::expect_equal( base::sort(result), base::sort(expected_files))
+  
+  # - extracted files
+  testthat::expect_equal( base::sort(list.files( test_extdir, recursive = TRUE, full.names = FALSE, include.dirs = FALSE)), base::sort(expected_files))
+  
+  
+  # - extracted internal files
+  #   note: knowing that test extraction is always to test_root
+  #   note: knowing that test extractions are to directories that start with test-ext*
+  
+  act_files <- list.files( test_root, all.files = TRUE, recursive = TRUE, include.dirs = FALSE, full.names = FALSE )
+  act_files <- act_files[ base::startsWith( act_files, "test-ext" ) ]
+
+  testthat::expect_false( any( c( "sha", "md5") %in% base::basename(act_files) ) )
+
+})
+
+
+
+
+
+
+
+testthat::test_that( "unarchive.archiveFilesOnlyDisableExtractInternalFiles", {
+  
+  #' @cx.tests Extracting an archive file with files only and disable extract of internal files
+  
+  
+  # -- stage 
+  
+  test_root <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-area-", tmpdir = base::tempdir(), fileext = "") )
+  
+  on.exit({
+    base::unlink( test_root, recursive = TRUE, force = TRUE )
+  }, add = TRUE )
+  
+  if ( ! dir.exists( test_root ) && ! dir.create( test_root, recursive = TRUE ) )
+    testthat::fail("Could not create test area")
+  
+  
+  # - test content directories
+  
+  test_src <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-source-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( ! dir.exists( test_src ) && ! dir.create( test_src, recursive = TRUE ) )
+    testthat::fail("Could note stage test source directory")
+  
+  test_subdirs <- replicate( 5, 
+                             paste( sample( c( base::letters, base::LETTERS, as.character(0:9) ), sample(10:50, 1), replace = TRUE ), collapse = "" ), 
+                             simplify = TRUE )
+  
+  for ( xpath in test_subdirs )
+    if ( ! dir.exists(file.path( test_src, xpath, fsep = "/")) && ! dir.create( file.path( test_src, xpath, fsep = "/"), recursive = TRUE) )
+      testthat::fail( "Could not stage source subdirectory" )
+  
+  
+  # - test content files  
+  
+  test_files <- replicate( 2, 
+                           cxapp::cxapp_standardpath( base::tempfile( pattern = "test-file-", 
+                                                                      tmpdir = file.path( test_src, sample( test_subdirs, 1), fsep = "/"), 
+                                                                      fileext = ".txt" ) ), 
+                           simplify = TRUE )
+  
+  
+  for ( xsrcfile in test_files )
+    base::writeLines( paste( sample( c( base::letters, base::LETTERS, as.character(0:9) ), sample(50:1024, 1), replace = TRUE ), collapse = "" ),
+                      con = xsrcfile ) 
+  
+  test_srcfiles <- list.files( test_src, recursive = TRUE, full.names = FALSE, include.dirs = FALSE )
+  
+  
+  
+  # - internal .cx directory
+  
+  test_cx <- file.path( test_src, ".cx", fsep = "/" )
+  
+  if ( dir.exists( test_cx ) || ! dir.create( test_cx, recursive = TRUE ) )
+    testthat::fail( "Could not stage test cx directory" )
+  
+  
+  
+  # - test content digests
+  
+  test_shadigests <- base::unlist(sapply( base::sort(test_srcfiles), function(x) {
+    digest::digest( file.path( test_src, x, fsep = "/"), algo = "sha1", file = TRUE )
+  }, USE.NAMES = TRUE), use.names = TRUE )
+  
+  
+  base::writeLines(
+    base::unlist(lapply( test_srcfiles, function(x) {
+      paste0( test_shadigests[ x ], "  ", x )
+    })), 
+    con = file.path( test_cx, "sha", fsep = "/" )
+  )
+  
+  
+  test_md5digests <- base::unlist(sapply( base::sort(test_srcfiles), function(x) {
+    digest::digest( file.path( test_src, x, fsep = "/"), algo = "md5", file = TRUE )
+  }, USE.NAMES = TRUE), use.names = TRUE )
+  
+  base::writeLines(
+    base::unlist(lapply( test_srcfiles, function(x) {
+      paste0( test_md5digests[ x ], "  ", x )
+    })), 
+    con = file.path( test_cx, "md5", fsep = "/" )
+  )
+  
+  
+  # - test file
+  test_archive <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-", tmpdir = test_root, fileext = ".zip" ) )
+  
+  zip::zip( test_archive, list.files( test_src, all.files = TRUE, recursive = TRUE, full.names = FALSE, include.dirs = FALSE), root = test_src, mode = "mirror" )
+  
+  if ( ! file.exists(test_archive) )
+    testthat::fail( "Could not stage test archive" )
+  
+  
+  
+  
+  # - extract directory
+  
+  test_extdir <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-extdir-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( ! dir.exists( test_extdir ) && ! dir.create( test_extdir, recursive = TRUE ) )
+    testthat::fail("Could note stage test extract directory")
+  
+  
+  # - extract directory for internal files
+  
+  test_extcx <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-extcx-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( ! dir.exists( test_extcx ) && ! dir.create( test_extcx, recursive = TRUE ) )
+    testthat::fail("Could note stage test .cx extract directory")
+  
+  
+  
+  # -- test
+  result <- cxlib::cxlib_unarchive( test_archive, extract.dir = test_extdir, extract.cx = NULL )
+  
+  
+  # -- expected
+  
+  # - files extracted
+  expected_files <- test_srcfiles
+  
+  
+  # -- assertions
+  
+  # - result
+  testthat::expect_equal( base::sort(result), base::sort(expected_files))
+  
+  # - extracted files
+  testthat::expect_equal( base::sort(list.files( test_extdir, recursive = TRUE, full.names = FALSE, include.dirs = FALSE)), base::sort(expected_files))
+  
+  
+  # - extracted internal files
+  #   note: knowing that test extraction is always to test_root
+  #   note: knowing that test extractions are to directories that start with test-ext*
+  
+  act_files <- list.files( test_root, all.files = TRUE, recursive = TRUE, include.dirs = FALSE, full.names = FALSE )
+  act_files <- act_files[ base::startsWith( act_files, "test-ext" ) ]
+  
+  testthat::expect_false( any( c( "sha", "md5") %in% base::basename(act_files) ) )
+  
+})
+
+
+
+
+
+testthat::test_that( "unarchive.archiveFilesOnlyEnableExtractInternalFiles", {
+  
+  #' @cx.tests Extracting an archive file with files only and enable extract of internal files
+  
+  
+  # -- stage 
+  
+  test_root <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-area-", tmpdir = base::tempdir(), fileext = "") )
+  
+  on.exit({
+    base::unlink( test_root, recursive = TRUE, force = TRUE )
+  }, add = TRUE )
+  
+  if ( ! dir.exists( test_root ) && ! dir.create( test_root, recursive = TRUE ) )
+    testthat::fail("Could not create test area")
+  
+  
+  # - test content directories
+  
+  test_src <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-source-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( ! dir.exists( test_src ) && ! dir.create( test_src, recursive = TRUE ) )
+    testthat::fail("Could note stage test source directory")
+  
+  test_subdirs <- replicate( 5, 
+                             paste( sample( c( base::letters, base::LETTERS, as.character(0:9) ), sample(10:50, 1), replace = TRUE ), collapse = "" ), 
+                             simplify = TRUE )
+  
+  for ( xpath in test_subdirs )
+    if ( ! dir.exists(file.path( test_src, xpath, fsep = "/")) && ! dir.create( file.path( test_src, xpath, fsep = "/"), recursive = TRUE) )
+      testthat::fail( "Could not stage source subdirectory" )
+  
+  
+  # - test content files  
+  
+  test_files <- replicate( 2, 
+                           cxapp::cxapp_standardpath( base::tempfile( pattern = "test-file-", 
+                                                                      tmpdir = file.path( test_src, sample( test_subdirs, 1), fsep = "/"), 
+                                                                      fileext = ".txt" ) ), 
+                           simplify = TRUE )
+  
+  
+  for ( xsrcfile in test_files )
+    base::writeLines( paste( sample( c( base::letters, base::LETTERS, as.character(0:9) ), sample(50:1024, 1), replace = TRUE ), collapse = "" ),
+                      con = xsrcfile ) 
+  
+  test_srcfiles <- list.files( test_src, recursive = TRUE, full.names = FALSE, include.dirs = FALSE )
+  
+  
+  
+  # - internal .cx directory
+  
+  test_cx <- file.path( test_src, ".cx", fsep = "/" )
+  
+  if ( dir.exists( test_cx ) || ! dir.create( test_cx, recursive = TRUE ) )
+    testthat::fail( "Could not stage test cx directory" )
+  
+  
+  
+  # - test content digests
+  
+  test_shadigests <- base::unlist(sapply( base::sort(test_srcfiles), function(x) {
+    digest::digest( file.path( test_src, x, fsep = "/"), algo = "sha1", file = TRUE )
+  }, USE.NAMES = TRUE), use.names = TRUE )
+  
+  
+  base::writeLines(
+    base::unlist(lapply( test_srcfiles, function(x) {
+      paste0( test_shadigests[ x ], "  ", x )
+    })), 
+    con = file.path( test_cx, "sha", fsep = "/" )
+  )
+  
+  
+  test_md5digests <- base::unlist(sapply( base::sort(test_srcfiles), function(x) {
+    digest::digest( file.path( test_src, x, fsep = "/"), algo = "md5", file = TRUE )
+  }, USE.NAMES = TRUE), use.names = TRUE )
+  
+  base::writeLines(
+    base::unlist(lapply( test_srcfiles, function(x) {
+      paste0( test_md5digests[ x ], "  ", x )
+    })), 
+    con = file.path( test_cx, "md5", fsep = "/" )
+  )
+  
+  
+  # - test file
+  test_archive <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-archive-", tmpdir = test_root, fileext = ".zip" ) )
+  
+  zip::zip( test_archive, list.files( test_src, all.files = TRUE, recursive = TRUE, full.names = FALSE, include.dirs = FALSE), root = test_src, mode = "mirror" )
+  
+  if ( ! file.exists(test_archive) )
+    testthat::fail( "Could not stage test archive" )
+  
+  
+  
+  
+  # - extract directory
+  
+  test_extdir <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-extdir-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( ! dir.exists( test_extdir ) && ! dir.create( test_extdir, recursive = TRUE ) )
+    testthat::fail("Could note stage test extract directory")
+  
+  
+  # - extract directory for internal files
+  
+  test_extcx <- cxapp::cxapp_standardpath( base::tempfile( pattern = "test-extcx-", tmpdir = test_root, fileext = "" ) )
+  
+  if ( ! dir.exists( test_extcx ) && ! dir.create( test_extcx, recursive = TRUE ) )
+    testthat::fail("Could note stage test .cx extract directory")
+  
+  
+  
+  # -- test
+  result <- cxlib::cxlib_unarchive( test_archive, extract.dir = test_extdir, extract.cx = test_extcx )
+  
+  
+  # -- expected
+  
+  # - files extracted
+  expected_files <- test_srcfiles
+  
+  # - cx files extracted
+  expected_cxfiles <- list.files( test_cx, all.files = TRUE, recursive = FALSE, full.names = FALSE, include.dirs = FALSE )
+  expected_cxfiles <- expected_cxfiles[ ! expected_cxfiles %in% c( ".", "..") ]
+  
+  # -- assertions
+  
+  # - result
+  testthat::expect_equal( base::sort(result), base::sort(expected_files))
+  
+  # - extracted files
+  testthat::expect_equal( base::sort(list.files( test_extdir, recursive = TRUE, full.names = FALSE, include.dirs = FALSE)), base::sort(expected_files))
+  
+  
+  # - extracted internal files
+  #   note: knowing that test extraction is always to test_root
+  #   note: knowing that test extractions are to directories that start with test-ext*
+  
+  act_files <- list.files( test_extcx, all.files = TRUE, recursive = TRUE, include.dirs = FALSE, full.names = FALSE )
+
+  testthat::expect_equal( base::sort(act_files), base::sort(expected_cxfiles) )
+
+  
+})
